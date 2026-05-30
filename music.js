@@ -182,7 +182,7 @@
   const progressContainer = document.createElement("div");
   Object.assign(progressContainer.style, {
     position: "fixed",
-    bottom: "20px",
+    bottom: "86px", // sit above the bottom mode-menu bar
     left: "50%",
     transform: "translateX(-50%)",
     width: "80%",
@@ -207,7 +207,7 @@
   const timeLabel = document.createElement("div");
   Object.assign(timeLabel.style, {
     position: "fixed",
-    bottom: "35px",
+    bottom: "104px", // sit above the bottom mode-menu bar
     left: "50%",
     transform: "translateX(-50%)",
     color: "white",
@@ -223,7 +223,7 @@
   playBtn.textContent = "⏸️ Pause";
   Object.assign(playBtn.style, {
     position: "fixed",
-    bottom: "40px",
+    bottom: "96px", // sit above the bottom mode-menu bar
     right: "20px",
     zIndex: "10000",
     display: "none",

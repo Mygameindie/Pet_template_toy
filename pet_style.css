@@ -39,14 +39,23 @@ canvas {
   padding: 6px 8px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.15);
   display: flex;
-  flex-wrap: wrap;
+  /* Single scrollable row so the nav bar stays short and never grows tall
+     enough to collide with a mode's toolbar (which sit just above it). */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   gap: 5px;
   align-items: center;
-  justify-content: center;
-  z-index: 9999;
+  justify-content: flex-start;
+  /* Keep the mode menu above every mode's overlay UI so the player can ALWAYS
+     switch modes and never gets trapped (e.g. behind the garden/karaoke bars). */
+  z-index: 2147483000;
   max-width: 96vw;
   width: auto;
 }
+/* Hide the scrollbar on the mode menu (still scrollable by drag/swipe). */
+#mode-menu::-webkit-scrollbar { display: none; }
+#mode-menu { scrollbar-width: none; }
 
 #mode-menu button {
   appearance: none;

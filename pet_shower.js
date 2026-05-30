@@ -232,8 +232,8 @@
       drawBase(i, baths[i].currentBaseKey);
     }
 
-    // 3) sponge
-    if (sponge.img.complete) {
+    // 3) sponge (guard against a broken/missing image — drawImage throws on those)
+    if (sponge.img.complete && sponge.img.naturalWidth > 0) {
       ctx.drawImage(sponge.img, sponge.x, sponge.y, sponge.width, sponge.height);
     }
 
