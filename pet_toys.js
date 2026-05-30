@@ -185,6 +185,24 @@
     });
   }
 
+  // Continuous boost: while a toy rests on a pet, keep raising happiness.
+  // The tick also re-checks overlaps so the state stays correct as the pets
+  // move/bounce (not just while the toy is being dragged).
+  function toyTick() {
+    const toys = document.querySelectorAll('.toy-item');
+    if (!toys.length) return;
+    toys.forEach(toy => checkToyCollision(toy));
+    [...colliding].forEach(key => {
+      const n = Number(key.split('-')[1]);
+      try {
+        if (window.PetStats && typeof window.PetStats.play === 'function') {
+          window.PetStats.play(n);
+        }
+      } catch (_) {}
+    });
+  }
+  setInterval(toyTick, 700);
+
   function makeToyDraggable(toy) {
     let sx = 0, sy = 0, ox = 0, oy = 0;
 
@@ -311,6 +329,28 @@
         toggleBtn.classList.remove('active');
       }
     }, true);
+
+    // The Toys button belongs to the main (Normal/Drag) screen only. Show it
+    // there and hide it — clearing the panel and any spawned toys — whenever
+    // another mode (Feed, Shower, Troll, etc.) is selected.
+    function setToyUIVisible(visible) {
+      toggleBtn.style.display = visible ? '' : 'none';
+      if (!visible) {
+        panel.style.display = 'none';
+        toggleBtn.classList.remove('active');
+        document.querySelectorAll('.toy-item').forEach(t => {
+          clearToyCollisions(t);
+          t.remove();
+        });
+      }
+    }
+
+    modeMenu.querySelectorAll('button').forEach(btn => {
+      if (btn === toggleBtn) return;
+      btn.addEventListener('click', () => {
+        setToyUIVisible(btn.id === 'normal-btn');
+      });
+    });
   }
 
   document.addEventListener('DOMContentLoaded', initToys);
