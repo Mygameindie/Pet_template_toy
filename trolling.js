@@ -37,6 +37,14 @@
     { x: 0, y: 0, w: 400, h: 450, hurtUntil: 0, recoilUntil: 0, drawFilter: "hue-rotate(140deg) saturate(1.2)" },
   ];
 
+  // Match the main screen: derive width from the base image's real aspect ratio.
+  function syncPetWidths() {
+    if (!window.PetArt) return;
+    pets.forEach(p => { p.w = window.PetArt.widthForHeight(p.h); });
+  }
+  syncPetWidths();
+  if (window.PetArt) window.PetArt.onReady(() => { syncPetWidths(); resizeCanvas(); });
+
   function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;

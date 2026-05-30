@@ -165,11 +165,13 @@
   // Hitbox
   // ==============================
 
+  // Wash hitbox expressed as fractions of the drawn base, so it scales with the
+  // pet size (previously tuned in px for a 520x520 base: 120/90/130/150).
   const hitbox = {
-    xOffset: 120,
-    yOffset: 90,
-    width: 130,
-    height: 150,
+    xOffset: 0.231,
+    yOffset: 0.173,
+    width: 0.25,
+    height: 0.288,
   };
 
   // ==============================
@@ -184,9 +186,9 @@
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const scale = 1.3;
-    const scaledW = 400 * scale;
-    const scaledH = 400 * scale;
+    // Match the main screen: same height, width from the base image's aspect ratio.
+    const scaledH = 450;
+    const scaledW = window.PetArt ? window.PetArt.widthForHeight(scaledH) : 400;
 
     const leftX = canvas.width * 0.35 - scaledW / 2;
     const rightX = canvas.width * 0.65 - scaledW / 2;
@@ -242,11 +244,15 @@
       const bx = baths[i].x;
       const by = baths[i].y;
 
+      const hbX = bx + baths[i].w * hitbox.xOffset;
+      const hbY = by + baths[i].h * hitbox.yOffset;
+      const hbW = baths[i].w * hitbox.width;
+      const hbH = baths[i].h * hitbox.height;
       const touching =
-        sponge.x + sponge.width > bx + hitbox.xOffset &&
-        sponge.x < bx + hitbox.xOffset + hitbox.width &&
-        sponge.y + sponge.height > by + hitbox.yOffset &&
-        sponge.y < by + hitbox.yOffset + hitbox.height;
+        sponge.x + sponge.width > hbX &&
+        sponge.x < hbX + hbW &&
+        sponge.y + sponge.height > hbY &&
+        sponge.y < hbY + hbH;
 
       if (touching) {
         baths[i].currentBaseKey = "bath2";

@@ -92,6 +92,14 @@
     },
   ];
 
+  // Match the main screen: derive width from the base image's real aspect ratio.
+  function syncPetWidths() {
+    if (!window.PetArt) return;
+    pets.forEach(p => { p.w = window.PetArt.widthForHeight(p.h); });
+  }
+  syncPetWidths();
+  if (window.PetArt) window.PetArt.onReady(syncPetWidths);
+
   function safeDrawPet(i, mood, x, y, w, h) {
     let set = petMoodSets[i] || petMoodSets[0];
     let img = set[mood] || set.normal;

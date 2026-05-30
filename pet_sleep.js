@@ -30,8 +30,9 @@
   const GROUND_OFFSET = 100;
   const BED_W = 700;
   const BED_H = 450;
-  const PET_W = 400;
   const PET_H = 450;
+  // Match the main screen: derive width from the base image's real aspect ratio.
+  let PET_W = window.PetArt ? window.PetArt.widthForHeight(PET_H) : 400;
 
   function resizeCanvas() {
     baseCanvas.width = window.innerWidth;
@@ -88,6 +89,12 @@
     makePet(baseCanvas.width * 0.3, 0),
     makePet(baseCanvas.width * 0.7, 1),
   ];
+
+  // Re-sync widths to the true aspect ratio once the base image has loaded.
+  if (window.PetArt) window.PetArt.onReady(() => {
+    PET_W = window.PetArt.widthForHeight(PET_H);
+    pets.forEach(p => { p.w = window.PetArt.widthForHeight(p.h); });
+  });
 
   // === One shared bed (centered) ===
   const bed = {

@@ -79,8 +79,9 @@
 
   function getFit(img, idx) {
     const scale = 0.5;
-    const w = 400;
     const h = 450;
+    // Match the main screen: derive width from the base image's real aspect ratio.
+    const w = window.PetArt ? window.PetArt.widthForHeight(h) : 400;
     const x = (idx === 0)
       ? (canvas.width * 0.35 - w / 2)
       : (canvas.width * 0.65 - w / 2);

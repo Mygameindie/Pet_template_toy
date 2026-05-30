@@ -66,8 +66,10 @@
   // ==============================
   // Pet state
   // ==============================
-  const PET_W = 400;
   const PET_H = 450;
+  // Match the main screen: derive width from the base image's real aspect ratio.
+  let PET_W = window.PetArt ? window.PetArt.widthForHeight(PET_H) : 400;
+  if (window.PetArt) window.PetArt.onReady(() => { PET_W = window.PetArt.widthForHeight(PET_H); });
 
   const pets = [
     { idx: 0, phase: 'sick', healTimer: 0 },

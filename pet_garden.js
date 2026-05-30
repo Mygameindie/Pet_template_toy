@@ -546,7 +546,8 @@
 
   function drawLockedPets(fenceY) {
     const petH = Math.min(getCanvasH() * 0.28, 210);
-    const petW = petH * (400 / 450);
+    // Use the base image's real aspect ratio (matches every other mode).
+    const petW = window.PetArt ? window.PetArt.widthForHeight(petH) : petH * (400 / 450);
     const petY = fenceY - petH - 10;
 
     [
