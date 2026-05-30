@@ -9,21 +9,11 @@
   const ctx = canvas.getContext('2d');
 
   // ===== HD / RETINA CANVAS SETUP =====
-  let DPR = Math.max(1, window.devicePixelRatio || 1);
-
+  // HD (devicePixelRatio) scaling + crisp sampling are handled centrally by
+  // hd_canvas.js. We just set the CSS-pixel size; the helper does the rest.
   function resizeCanvasHD() {
-    DPR = Math.max(1, window.devicePixelRatio || 1);
-
-    canvas.style.width = window.innerWidth + 'px';
-    canvas.style.height = window.innerHeight + 'px';
-
-    canvas.width = Math.floor(window.innerWidth * DPR);
-    canvas.height = Math.floor(window.innerHeight * DPR);
-
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
   }
 
   resizeCanvasHD();

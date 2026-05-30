@@ -22,6 +22,9 @@
   }
   const blanketCtx = blanketCanvas.getContext("2d");
 
+  // Render the blanket layer in HD too (the main #canvas is auto-enabled).
+  if (window.HDCanvas) window.HDCanvas.enable(blanketCanvas);
+
   // CONFIG
   const BED_OFFSET = 450;
   const GROUND_OFFSET = 100;

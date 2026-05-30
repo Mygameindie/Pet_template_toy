@@ -1,28 +1,20 @@
 // canvas_fix.js
-// Auto-resize canvas correctly for portrait & landscape
-// Keeps rendering sharp using devicePixelRatio
+// Sizes the canvas to the viewport on load / resize / rotation.
+// The HD (devicePixelRatio) scaling and crisp image sampling are handled
+// centrally by hd_canvas.js — here we only deal with CSS-pixel dimensions.
 
 (function () {
   const canvas = document.getElementById("canvas");
   if (!canvas) return;
 
-  const ctx = canvas.getContext("2d");
-
   function resizeCanvas() {
     const cssWidth = window.innerWidth;
     const cssHeight = window.innerHeight;
-    const dpr = Math.max(1, window.devicePixelRatio || 1);
 
-    // Set internal resolution
-    canvas.width = Math.floor(cssWidth * dpr);
-    canvas.height = Math.floor(cssHeight * dpr);
-
-    // Set visible size
-    canvas.style.width = cssWidth + "px";
-    canvas.style.height = cssHeight + "px";
-
-    // Prevent blur
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // Assigning width/height routes through hd_canvas.js, which scales the
+    // backing store by the (capped) device pixel ratio for a sharp image.
+    canvas.width = cssWidth;
+    canvas.height = cssHeight;
 
     // Optional callback for your game
     if (typeof window.onGameResize === "function") {
