@@ -4,6 +4,12 @@
 // drag it onto a pet, and the pet gets a small play/happiness boost.
 
 (() => {
+  // ======================================================================
+  // 🔧 DEBUG SWITCH — set to true to show the toy hit boxes, false to hide.
+  //    Just change this one line in the code. (No shortcut needed.)
+  // ======================================================================
+  const SHOW_HITBOX = false;
+
   const DEFAULT_TOYS = [
     { id: 'toy_1', src: 'toy_1.png', alt: 'Toy 1' },
   ];
@@ -43,6 +49,22 @@
 
   // Rect-overlap test (like Toy3) between the toy and each pet's belly hotspot
   // — a sub-region of the body, mirroring Toy3's belly/genital button.
+  // Belly hotspot for a pet, in canvas coordinates. Single source of truth used
+  // by both collision detection and the debug overlay.
+  // Centered horizontally, ~70% down the sprite box (0.20 below the pet's
+  // vertical center), matching where the belly button sits on the base art.
+  function bellyBox(p) {
+    const bw = p.w * 0.09;
+    const bh = p.h * 0.07;
+    const cy = p.y + p.h * 0.25;
+    return {
+      left: p.x - bw / 2,
+      right: p.x + bw / 2,
+      top: cy - bh / 2,
+      bottom: cy + bh / 2,
+    };
+  }
+
   function petHitIndex(toy) {
     const pose = typeof window.getPetPose === 'function' ? window.getPetPose() : null;
     if (!pose || !Array.isArray(pose.pets)) return -1;
@@ -57,20 +79,69 @@
     const tb = r.bottom - canvasRect.top;
 
     for (let i = pose.pets.length - 1; i >= 0; i--) {
-      const p = pose.pets[i];
-      // Belly hotspot: centered horizontally, around the lower-middle of the body.
-      const bw = p.w * 0.38;
-      const bh = p.h * 0.30;
-      const left = p.x - bw / 2;
-      const right = p.x + bw / 2;
-      const top = p.y + p.h * 0.10 - bh / 2;
-      const bottom = p.y + p.h * 0.10 + bh / 2;
-
-      const overlapping = !(tr < left || tl > right || tb < top || tt > bottom);
+      const b = bellyBox(pose.pets[i]);
+      const overlapping = !(tr < b.left || tl > b.right || tb < b.top || tt > b.bottom);
       if (overlapping) return i;
     }
     return -1;
   }
+
+  // ===== DEBUG: visualize the toy hit boxes =====
+  // Toggle with the "H" key, or call window.toggleToyHitbox() in the console.
+  let hitboxOn = false;
+  let hitboxRaf = 0;
+  let hitboxEls = [];
+
+  function renderHitboxes() {
+    const pose = typeof window.getPetPose === 'function' ? window.getPetPose() : null;
+    const canvasRect = pose?.canvasRect || document.getElementById('canvas')?.getBoundingClientRect();
+    if (pose && Array.isArray(pose.pets) && canvasRect) {
+      pose.pets.forEach((p, i) => {
+        let el = hitboxEls[i];
+        if (!el) {
+          el = document.createElement('div');
+          el.className = 'toy-hitbox-debug';
+          document.body.appendChild(el);
+          hitboxEls[i] = el;
+        }
+        const b = bellyBox(p);
+        el.style.left = `${canvasRect.left + b.left}px`;
+        el.style.top = `${canvasRect.top + b.top}px`;
+        el.style.width = `${b.right - b.left}px`;
+        el.style.height = `${b.bottom - b.top}px`;
+      });
+    }
+    hitboxRaf = requestAnimationFrame(renderHitboxes);
+  }
+
+  function toggleToyHitbox(on) {
+    hitboxOn = (on === undefined) ? !hitboxOn : !!on;
+    if (hitboxOn) {
+      renderHitboxes();
+    } else {
+      cancelAnimationFrame(hitboxRaf);
+      hitboxEls.forEach(el => el.remove());
+      hitboxEls = [];
+    }
+    return hitboxOn;
+  }
+  window.toggleToyHitbox = toggleToyHitbox;
+
+  // Show the hit boxes when the SHOW_HITBOX switch above is true.
+  // (You can also still toggle live with the "H" key or toggleToyHitbox() in
+  //  the console, but you don't need to — just flip SHOW_HITBOX in the code.)
+  function applyHitboxSwitch() {
+    if (SHOW_HITBOX) toggleToyHitbox(true);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyHitboxSwitch);
+  } else {
+    applyHitboxSwitch();
+  }
+
+  window.addEventListener('keydown', e => {
+    if (e.key === 'h' || e.key === 'H') toggleToyHitbox();
+  });
 
   function checkToyCollision(toy) {
     const hit = petHitIndex(toy);
@@ -82,6 +153,12 @@
       if (!colliding.has(key)) {
         colliding.add(key);
         setPetToy(hit, true);
+        // Playing with a toy also boosts the pet's happiness (once per touch).
+        try {
+          if (window.PetStats && typeof window.PetStats.play === 'function') {
+            window.PetStats.play(hit);
+          }
+        } catch (_) {}
         toy.classList.add('toy-touched');
         setTimeout(() => toy.classList.remove('toy-touched'), 400);
       }

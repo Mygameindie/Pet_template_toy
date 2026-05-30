@@ -85,6 +85,27 @@
     makePet(canvas.width * 0.65, 1),
   ];
 
+  // === Original-size base (uniform for both pets) ===
+  // Match every pet's box to pet 1's base art aspect ratio, so both pets render
+  // at the art's true proportions AND at the same size. Height stays the display
+  // size; width is derived from the image's natural dimensions once it loads.
+  function syncPetAspect() {
+    const img = baseSets[0].stand;
+    if (!img || img._failed || !img.naturalWidth || !img.naturalHeight) return;
+    const aspect = img.naturalWidth / img.naturalHeight;
+    pets.forEach(pet => {
+      const bottom = pet.y + pet.h / 2;   // keep feet anchored to current spot
+      pet.w = pet.h * aspect;
+      pet.y = bottom - pet.h / 2;
+      pet.oldx = pet.x;
+      pet.oldy = pet.y;
+    });
+  }
+
+  const baseImg = baseSets[0].stand;
+  if (baseImg && baseImg.complete && baseImg.naturalWidth) syncPetAspect();
+  else if (baseImg) baseImg.addEventListener('load', syncPetAspect);
+
   // === Physics ===
   const gravity = 1.2;
   const damping = 0.985;
