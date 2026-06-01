@@ -1,9 +1,8 @@
 // ===========================================================
 // 🩺 DOCTOR MODE
-// Pets show sick face. Drag the medicine to heal them.
-// ✅ 2 pets
-// ✅ base_sick.png / base_sick_2.png   — sick face (user provides)
-// ✅ base_healed.png / base_healed_2.png — healed face (user provides)
+// Pet shows a sick face. Drag the medicine to heal it.
+// ✅ base_sick.png   — sick face (user provides)
+// ✅ base_healed.png — healed face (user provides)
 // ✅ Falls back to base.png if sick/healed images not yet added
 // ===========================================================
 
@@ -48,11 +47,6 @@
       healed: loadImg('base_healed.png'),
       normal: loadImg('base.png'),
     },
-    {
-      sick:   loadImg('base_sick_2.png'),
-      healed: loadImg('base_healed_2.png'),
-      normal: loadImg('base_2.png'),
-    },
   ];
 
   function getImg(set, key) {
@@ -73,10 +67,9 @@
 
   const pets = [
     { idx: 0, phase: 'sick', healTimer: 0 },
-    { idx: 1, phase: 'sick', healTimer: 0 },
   ];
 
-  function petX(i) { return canvas.width * (i === 0 ? 0.35 : 0.65); }
+  function petX() { return canvas.width * 0.5; }
   function petY()   { return groundY - PET_H / 2; }
 
   // ==============================
@@ -165,11 +158,8 @@
 
     if (!img) return;
 
-    // pet2 fallback tint
-    const needsTint = (i === 1 && set.sick._failed && set.normal.src.endsWith('base.png'));
     ctx.save();
-    if (needsTint) ctx.filter = 'hue-rotate(140deg) saturate(1.2)';
-    ctx.drawImage(img, petX(i) - PET_W / 2, petY() - PET_H / 2, PET_W, PET_H);
+    ctx.drawImage(img, petX() - PET_W / 2, petY() - PET_H / 2, PET_W, PET_H);
     if (typeof window.drawOutfitOverlay === 'function') {
       window.drawOutfitOverlay(ctx, 'stand', petX(i) - PET_W / 2, petY() - PET_H / 2, PET_W, PET_H, i);
     }

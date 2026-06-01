@@ -45,10 +45,7 @@
   }
 
   // ===========================================================
-  // 🐾 PET IMAGES (per pet)
-  // Convention for 2 art (optional):
-  //   base_2.png, base_happy_2.png, base_disgust_2.png, base_freeze_2.png, base_spicy_2.png
-  // If missing, we draw pet1 art with a hue-rotate tint so it still looks like a different pet.
+  // 🐾 PET IMAGES
   // ===========================================================
   function createImg(src) {
     const img = new Image();
@@ -70,25 +67,16 @@
 
   const petMoodSets = [
     loadMoodSet(''),
-    loadMoodSet('_2'),
   ];
 
   const pets = [
     {
-      x: canvas.width * 0.35,
+      x: canvas.width * 0.5,
       y: canvas.height - 150 - 150,
       w: 400,
       h: 450,
       mood: "normal",
       drawFilter: "none",
-    },
-    {
-      x: canvas.width * 0.65,
-      y: canvas.height - 150 - 150,
-      w: 400,
-      h: 450,
-      mood: "normal",
-      drawFilter: "hue-rotate(140deg) saturate(1.2)",
     },
   ];
 

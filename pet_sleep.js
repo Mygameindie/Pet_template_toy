@@ -60,15 +60,15 @@
     };
   }
 
-  const baseSets = [loadBaseSet(''), loadBaseSet('_2')];
+  const baseSets = [loadBaseSet('')];
 
   const imgs = {
     bed: createImg("bed.png"),
     blanket1: createImg("blanket1.png"),
   };
 
-  // === Pets (2) ===
-  function makePet(x, idx) {
+  // === Pet (1) ===
+  function makePet(x) {
     const p = {
       x,
       y: baseCanvas.height - 170 - 170,
@@ -78,7 +78,7 @@
       oldx: 0,
       oldy: 0,
       visible: true,
-      drawFilter: idx === 1 ? "hue-rotate(140deg) saturate(1.2)" : "none",
+      drawFilter: "none",
     };
     p.oldx = p.x;
     p.oldy = p.y;
@@ -86,8 +86,7 @@
   }
 
   const pets = [
-    makePet(baseCanvas.width * 0.3, 0),
-    makePet(baseCanvas.width * 0.7, 1),
+    makePet(baseCanvas.width * 0.5),
   ];
 
   // Re-sync widths to the true aspect ratio once the base image has loaded.
@@ -102,7 +101,7 @@
     y: baseCanvas.height - BED_OFFSET,
     w: BED_W,
     h: BED_H,
-    petsInBed: [false, false],   // which pets are in the bed
+    petsInBed: [false],          // which pets are in the bed
     sleeping: false,             // blanket is locked = actually sleeping
   };
 
@@ -140,7 +139,7 @@
   }
 
   function anyPetInBed() {
-    return bed.petsInBed[0] || bed.petsInBed[1];
+    return bed.petsInBed[0];
   }
 
   function setBlanketPointerEvents() {
@@ -148,9 +147,9 @@
     blanketCanvas.style.pointerEvents = interactable ? "auto" : "none";
   }
 
-  // Where each pet sits inside the bed (left / right)
-  function petBedX(petIdx) {
-    return petIdx === 0 ? bed.x - bed.w * 0.18 : bed.x + bed.w * 0.18;
+  // Where the pet sits inside the bed (centered)
+  function petBedX() {
+    return bed.x;
   }
   function petBedY() {
     return bed.y;
@@ -213,8 +212,8 @@
       vy[i] = 0;
       vx[i] = 0;
 
-      // Show blanket only when BOTH pets are in bed
-      if (!bed.sleeping && bed.petsInBed[0] && bed.petsInBed[1]) {
+      // Show blanket once the pet is in bed
+      if (!bed.sleeping && bed.petsInBed[0]) {
         blanket.visible = true;
         blanket.locked = false;
         setBlanketPointerEvents();
@@ -261,7 +260,7 @@
       bed.sleeping = true;
 
       // Start sleeping for all pets in bed
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < pets.length; i++) {
         if (bed.petsInBed[i] && window.PetStats) {
           window.PetStats.sleep(i);
         }
@@ -287,13 +286,13 @@
 
     if (p.x > bedLeft && p.x < bedRight && p.y > bedTop && p.y < bedBottom) {
       // Wake up all pets in the bed
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < pets.length; i++) {
         if (!bed.petsInBed[i]) continue;
 
         const pet = pets[i];
         pet.visible = true;
         // Pop out above the bed
-        pet.x = petBedX(i);
+        pet.x = petBedX();
         pet.y = bed.y - bed.h / 2 - pet.h / 2;
         vx[i] = 0;
         vy[i] = 0;
@@ -301,7 +300,7 @@
         pet.oldy = pet.y;
       }
 
-      bed.petsInBed = [false, false];
+      bed.petsInBed = [false];
       bed.sleeping = false;
       blanket.visible = false;
       blanket.locked = false;
@@ -388,10 +387,10 @@
 
   function drawPetsInBed() {
     // Draw sleeping pets at their left/right positions inside the bed
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < pets.length; i++) {
       if (!bed.petsInBed[i]) continue;
 
-      const px = petBedX(i);
+      const px = petBedX();
       const py = petBedY();
       const pet = pets[i];
 
@@ -459,7 +458,7 @@
   const ENERGY_PER_TICK = 10;
   const sleepInterval = setInterval(() => {
     if (!bed.sleeping) return;
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < pets.length; i++) {
       if (bed.petsInBed[i] && window.PetStats) {
         window.PetStats.sleep(i, ENERGY_PER_TICK);
       }
@@ -467,8 +466,8 @@
   }, 1000);
 
   function updateSleepingFlags() {
-    window._petsSleeping = [false, false];
-    for (let i = 0; i < 2; i++) {
+    window._petsSleeping = [false];
+    for (let i = 0; i < pets.length; i++) {
       if (bed.sleeping && bed.petsInBed[i]) {
         window._petsSleeping[i] = true;
       }

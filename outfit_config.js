@@ -5,16 +5,15 @@
 //  HOW TO ADD A NEW CLOTHING ITEM (3 steps):
 //    1. Save the artwork as   images/<name>.png   (transparent PNG, same
 //       canvas size as the pet base so it lines up).
-//    2. Add "<name>" to the matching list below — under pet1 (girl) and/or
-//       pet2 (boy). Example: add a 2nd top for the girl -> "top2".
+//    2. Add "<name>" to the matching list below — under pet1.
+//       Example: add a 2nd top -> "top2".
 //    3. Refresh. Done. It shows up in the Dress Up panel automatically.
 //
 //  LABELS are made automatically from the name:  "top2" -> "Top 2".
 //    Want a custom name? Use an object instead of a string:
 //        { id: "top2", label: "Cool Hoodie" }
 //
-//  PET 2 (boy) images use the "_2" suffix by convention (e.g. "top1_2").
-//  Matching set numbers auto-pair the girl's top & bottom underwear
+//  Matching set numbers auto-pair the top & bottom underwear
 //  (e.g. "topunderwear3" + "bottomunderwear3" are treated as set 3).
 //
 //  This is a plain JS file (no network/JSON loading) so it can't glitch or
@@ -26,7 +25,7 @@ window.OUTFIT_CONFIG = {
   // -------------------------------------------------------------------------
   // CATEGORIES — order, display name, and draw layer (z). Higher z = on top.
   // Add a line here to create a brand-new clothing category, then add a
-  // matching list under pet1 / pet2 below.
+  // matching list under pet1 below.
   // -------------------------------------------------------------------------
   categories: [
     { key: "topUnderwear",      label: "Top Underwear",             z: 60  },
@@ -40,7 +39,7 @@ window.OUTFIT_CONFIG = {
   ],
 
   // -------------------------------------------------------------------------
-  // PET 1 — the girl's wardrobe. Add image base-names to each list.
+  // PET 1 — the wardrobe. Add image base-names to each list.
   // -------------------------------------------------------------------------
   pet1: {
     topUnderwear:      ["topunderwear1"],
@@ -54,23 +53,10 @@ window.OUTFIT_CONFIG = {
   },
 
   // -------------------------------------------------------------------------
-  // PET 2 — the boy's wardrobe (no top / one-piece underwear by design).
-  // -------------------------------------------------------------------------
-  pet2: {
-    bottomUnderwear:   ["bottomunderwear1_2", "boxers1_2"],
-    top:               ["top1_2"],
-    bottom:            ["pants1_2", "skirt1_2"],
-    dress:             ["dress1_2"],
-    shoes:             ["shoes1_2"],
-    hat:               ["hat1_2"],
-  },
-
-  // -------------------------------------------------------------------------
-  // DEFAULTS — what each pet is wearing when the game starts.
+  // DEFAULTS — what the pet is wearing when the game starts.
   // Use an item id from the lists above, or 0 for "nothing".
   // -------------------------------------------------------------------------
   defaults: {
     pet1: { topUnderwear: "topunderwear1", bottomUnderwear: "bottomunderwear1" },
-    pet2: { bottomUnderwear: "boxers1_2" },
   },
 };

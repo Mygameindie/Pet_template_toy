@@ -9,10 +9,9 @@
 // tinting, the layering by z, and the girl/boy clothing rules.
 //
 // Rules preserved from before:
-// - Pet 1 is the girl: top underwear + bottom underwear, or a one-piece.
-// - Pet 2 is the boy: bottom underwear / boxers only (no top/one-piece).
-// - Girl one-piece clears top/bottom underwear.
-// - Girl top/bottom underwear clears one-piece and auto-pairs the matching
+// - Top underwear + bottom underwear, or a one-piece.
+// - One-piece clears top/bottom underwear.
+// - Top/bottom underwear clears one-piece and auto-pairs the matching
 //   set number.
 // - Dress clears top + bottom; top or bottom clears dress.
 (() => {
@@ -36,8 +35,8 @@
       { key: "shoes", label: "Shoes", z: 90 },
       { key: "hat", label: "Hat", z: 180 },
     ],
-    pet1: {}, pet2: {},
-    defaults: { pet1: {}, pet2: {} },
+    pet1: {},
+    defaults: { pet1: {} },
   };
 
   // ---- Helpers --------------------------------------------------------------
@@ -91,10 +90,10 @@
   }));
 
   function buildCatalog() {
-    const catalog = { 0: {}, 1: {} };
-    [0, 1].forEach(p => cats.forEach(c => { catalog[p][c.key] = emptyCat(c); }));
-    const wardrobes = { 0: cfg.pet1 || {}, 1: cfg.pet2 || {} };
-    [0, 1].forEach(p => {
+    const catalog = { 0: {} };
+    [0].forEach(p => cats.forEach(c => { catalog[p][c.key] = emptyCat(c); }));
+    const wardrobes = { 0: cfg.pet1 || {} };
+    [0].forEach(p => {
       cats.forEach(c => {
         const list = wardrobes[p][c.key];
         if (!Array.isArray(list)) return;
@@ -108,9 +107,9 @@
   }
 
   const defaults = (() => {
-    const out = { 0: {}, 1: {} };
-    const src = { 0: (cfg.defaults && cfg.defaults.pet1) || {}, 1: (cfg.defaults && cfg.defaults.pet2) || {} };
-    [0, 1].forEach(p => cats.forEach(c => { out[p][c.key] = src[p][c.key] != null ? src[p][c.key] : 0; }));
+    const out = { 0: {} };
+    const src = { 0: (cfg.defaults && cfg.defaults.pet1) || {} };
+    [0].forEach(p => cats.forEach(c => { out[p][c.key] = src[p][c.key] != null ? src[p][c.key] : 0; }));
     return out;
   })();
 
@@ -118,14 +117,14 @@
   if (typeof window.activePetIndex !== "number") window.activePetIndex = 0;
 
   function makeSelected() {
-    return [0, 1].map(p => {
+    return [0].map(p => {
       const o = {};
       cats.forEach(c => o[c.key] = defaults[p][c.key] != null ? defaults[p][c.key] : 0);
       return o;
     });
   }
   function makeColors() {
-    return [0, 1].map(() => {
+    return [0].map(() => {
       const o = {};
       cats.forEach(c => o[c.key] = DEFAULT_COLOR);
       return o;
@@ -134,28 +133,22 @@
 
   window.selectedClothes = window.selectedClothes || makeSelected();
   window.clothingColors = window.clothingColors || makeColors();
-  window.currentOutfits = [0, 0];
+  window.currentOutfits = [0];
   window.currentOutfit = 0;
 
   function activePet() {
-    const n = Number(window.activePetIndex);
-    return Number.isFinite(n) ? Math.max(0, Math.min(1, Math.floor(n))) : 0;
+    return 0;
   }
 
   function catKeys(p = activePet()) {
     const catalog = window.dressUpCatalog[p] || window.dressUpCatalog[0] || {};
-    return cats.map(c => c.key).filter(k => {
-      if (!catalog[k]) return false;
-      // Pet 2 (boy) has no top underwear / one-piece underwear.
-      if (p === 1 && (k === "topUnderwear" || k === "onepieceUnderwear")) return false;
-      return true;
-    });
+    return cats.map(c => c.key).filter(k => !!catalog[k]);
   }
 
   function normalizeState() {
     const sel = makeSelected();
     const cols = makeColors();
-    [0, 1].forEach(p => {
+    [0].forEach(p => {
       window.selectedClothes[p] = window.selectedClothes[p] || {};
       window.clothingColors[p] = window.clothingColors[p] || {};
       cats.forEach(c => {
@@ -283,7 +276,7 @@
   function updateButtonLabel() {
     const p = activePet();
     const count = catKeys(p).map(k => window.selectedClothes[p] && window.selectedClothes[p][k]).filter(v => v !== 0 && v !== "0" && v != null).length;
-    dressBtn.textContent = `👗 Dress Up (Pet ${p + 1}: ${count} item${count === 1 ? "" : "s"})`;
+    dressBtn.textContent = `👗 Dress Up (${count} item${count === 1 ? "" : "s"})`;
   }
 
   // A clothing item shown as an image thumbnail (falls back to text/emoji).
@@ -340,7 +333,7 @@
     // Title + close
     const title = document.createElement("div");
     title.style.cssText = "font-weight:700;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;align-items:center;";
-    title.innerHTML = `<span>Pet ${p + 1} Dress Up</span>`;
+    title.innerHTML = `<span>Dress Up</span>`;
     const close = btn("✕");
     close.style.padding = "4px 8px";
     close.onclick = () => { panel.style.display = "none"; };
@@ -453,10 +446,8 @@
     updateButtonLabel();
   };
 
-  window.setActivePet = function (idx) {
-    const n = Number(idx);
-    if (!Number.isFinite(n)) return;
-    window.activePetIndex = Math.max(0, Math.min(1, Math.floor(n)));
+  window.setActivePet = function () {
+    window.activePetIndex = 0;
     renderPanel();
     updateButtonLabel();
   };

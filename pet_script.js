@@ -22,10 +22,7 @@
     return img;
   }
 
-  // Per-pet base sets.
-  // Convention: if you add another pet's art, name it:
-  //   base_pet2.png, base2_pet2.png, base3_pet2.png, base4_pet2.png
-  // If missing, we fall back to pet1 art and apply a hue-rotate filter so pet2 is still visually distinct.
+  // Base set for the pet.
   function loadBaseSet(suffix) {
     return {
       stand: createImg(`base${suffix}.png`),
@@ -40,10 +37,9 @@
     };
   }
 
-  // === Base images (per pet) ===
+  // === Base images (single pet) ===
   const baseSets = [
     loadBaseSet(''),
-    loadBaseSet('_2'),
   ];
 
   // NOTE: Do NOT create a clothes button here.
@@ -62,9 +58,8 @@
       y: canvas.height - 170 - 170,
       w: 400,
       h: 450,
-      type: idx === 1 ? 'pet2' : 'pet1',
-      // If pet2 art is missing, we tint the fallback so it still looks like a different pet.
-      drawFilter: idx === 1 ? 'hue-rotate(140deg) saturate(1.2)' : 'none',
+      type: 'pet1',
+      drawFilter: 'none',
       dragging: false,
       oldx: 0,
       oldy: 0,
@@ -81,8 +76,7 @@
 
   
   const pets = [
-    makePet(canvas.width * 0.35, 0),
-    makePet(canvas.width * 0.65, 1),
+    makePet(canvas.width * 0.5, 0),
   ];
 
   // === Original-size base (uniform for both pets) ===
@@ -221,9 +215,8 @@
     canvas.height = window.innerHeight;
     groundY = canvas.height - groundHeight;
 
-    // keep pets in bounds and spaced
+    // keep pet in bounds
     pets[0].x = Math.min(pets[0].x, canvas.width - pets[0].w / 2);
-    pets[1].x = Math.max(pets[1].x, pets[1].w / 2);
     pets.forEach(p => {
       if (p.y + p.h / 2 > groundY) {
         p.y = groundY - p.h / 2;
@@ -311,7 +304,7 @@
     pets.forEach((pet, i) => {
       const state = getState(pet);
 
-      // choose base set; if pet2 asset missing, use pet1 and tint
+      // choose base set
       let set = baseSets[i] || baseSets[0];
       let img = set[state];
       let useTintFallback = false;

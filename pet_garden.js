@@ -2,7 +2,7 @@
 // 🌱 pet_garden.js — Garden Mode
 // Plant seeds in dirt patches, water them to grow instantly,
 // harvest with scythe → food flies to bag → linked to feed mode inventory.
-// HD/Retina canvas enabled. Base image names: base.png, base_2.png
+// HD/Retina canvas enabled. Base image name: base.png
 // ===========================================================
 (function () {
   const canvas = document.getElementById('canvas');
@@ -59,8 +59,7 @@
   }
 
   const petImgs = [
-    createImg('base.png'),
-    createImg('base_2.png')
+    createImg('base.png')
   ];
 
   // ===== GROWTH TIMING =====
@@ -552,14 +551,9 @@
 
     [
       {
-        x: getCanvasW() * 0.22 - petW / 2,
+        x: getCanvasW() * 0.5 - petW / 2,
         idx: 0,
         filter: 'none',
-      },
-      {
-        x: getCanvasW() * 0.78 - petW / 2,
-        idx: 1,
-        filter: 'hue-rotate(140deg) saturate(1.2)',
       },
     ].forEach(({ x, idx, filter }) => {
       let img = petImgs[idx];
@@ -567,9 +561,7 @@
 
       if (!img || img._failed || !img.complete || img.naturalWidth === 0) {
         img = petImgs[0];
-        useFilter = idx === 1
-          ? 'hue-rotate(140deg) saturate(1.2)'
-          : 'none';
+        useFilter = 'none';
       }
 
       if (img && img.complete && img.naturalWidth > 0 && !img._failed) {

@@ -5,7 +5,7 @@
 // ===========================================================
 (() => {
   const SAVE_KEY = "purelilypet_save";
-  const NUM_PETS = 2;
+  const NUM_PETS = 1;
 
   // Stat decay rates (points lost per second)
   const DECAY = {
@@ -96,7 +96,7 @@
   function doSave() {
     writeSave({
       pets: petStats.map(s => ({ ...s })),
-      outfits: Array.isArray(window.currentOutfits) ? window.currentOutfits.slice() : [0, 0],
+      outfits: Array.isArray(window.currentOutfits) ? window.currentOutfits.slice() : [0],
       muted,
       gardenInventory: { ...gardenInventory },
       savedAt: Date.now(),

@@ -15,7 +15,7 @@
   // =========================
   // Active pet selection (tap pet 1 / 2)
   // =========================
-  let _lastFits = [null, null];
+  let _lastFits = [null];
   function _getPointerPos(e) {
     const rect = canvas.getBoundingClientRect();
     const t = (e.touches && e.touches[0]) ? e.touches[0] : e;
@@ -25,8 +25,7 @@
   }
   function _selectPetAt(e) {
     const p = _getPointerPos(e);
-    // Check top-most first (pet2 drawn after pet1)
-    for (let i = 1; i >= 0; i--) {
+    for (let i = _lastFits.length - 1; i >= 0; i--) {
       const t = _lastFits[i];
       if (!t) continue;
       if (p.x >= t.x && p.x <= t.x + t.w && p.y >= t.y && p.y <= t.y + t.h) {
@@ -56,19 +55,13 @@
   // =========================
   const petImgs = [
     { a: new Image(), b: new Image(), current: null, toggle: false }, // pet1
-    { a: new Image(), b: new Image(), current: null, toggle: false }, // pet2
   ];
 
   // Pet 1 dance frames
   petImgs[0].a.src = "base_music1.png";
   petImgs[0].b.src = "base_music2.png";
 
-  // Pet 2 dance frames (add these files). If missing, it will fallback to pet1.
-  petImgs[1].a.src = "base_music1_2.png";
-  petImgs[1].b.src = "base_music2_2.png";
-
   petImgs[0].current = petImgs[0].a;
-  petImgs[1].current = petImgs[1].a;
 
   let rafId = 0;
   let danceInterval = null;
@@ -82,9 +75,7 @@
     const h = 450;
     // Match the main screen: derive width from the base image's real aspect ratio.
     const w = window.PetArt ? window.PetArt.widthForHeight(h) : 400;
-    const x = (idx === 0)
-      ? (canvas.width * 0.35 - w / 2)
-      : (canvas.width * 0.65 - w / 2);
+    const x = canvas.width * 0.5 - w / 2;
     const y = canvas.height - h - 80;
     return { x, y, w, h };
   }
@@ -92,8 +83,7 @@
   function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    for (let i = 0; i < 2; i++) {
-      // Each pet can have its own frames; if pet2 frames are missing, fallback to pet1.
+    for (let i = 0; i < petImgs.length; i++) {
       let img = petImgs[i].current;
       if (!_imgOk(img)) img = petImgs[0].current;
       if (!_imgOk(img)) continue;
@@ -116,7 +106,7 @@
     clearInterval(danceInterval);
 
     danceInterval = setInterval(() => {
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < petImgs.length; i++) {
         const p = petImgs[i];
 
         // If this pet's B frame is missing/broken, keep A
@@ -136,7 +126,7 @@
     clearInterval(danceInterval);
     danceInterval = null;
 
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < petImgs.length; i++) {
       petImgs[i].toggle = false;
       petImgs[i].current = petImgs[i].a;
     }
@@ -365,10 +355,9 @@
     startProgress();
 
     // ✅ Auto-play immediately
-    // Karaoke boosts happiness for both pets
+    // Karaoke boosts happiness
     if (window.PetStats) {
       window.PetStats.karaoke(0);
-      window.PetStats.karaoke(1);
     }
     try {
       await mediaPlayer.play();

@@ -25,16 +25,12 @@
     return img;
   }
 
-  // Optional 2 art naming:
-  //   base_2.png, base_disgust_2.png
   const baseSets = [
     { normal: createImg("base.png"), hurt: createImg("base_disgust.png") },
-    { normal: createImg("base_2.png"), hurt: createImg("base_disgust_2.png") },
   ];
 
   const pets = [
     { x: 0, y: 0, w: 400, h: 450, hurtUntil: 0, recoilUntil: 0, drawFilter: "none" },
-    { x: 0, y: 0, w: 400, h: 450, hurtUntil: 0, recoilUntil: 0, drawFilter: "hue-rotate(140deg) saturate(1.2)" },
   ];
 
   // Match the main screen: derive width from the base image's real aspect ratio.
@@ -49,8 +45,7 @@
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     groundY = canvas.height - groundHeight;
-    pets[0].x = canvas.width * 0.35 - pets[0].w / 2;
-    pets[1].x = canvas.width * 0.65 - pets[1].w / 2;
+    pets[0].x = canvas.width * 0.5 - pets[0].w / 2;
     pets.forEach(p => { p.y = groundY - 500; });
   }
   window.addEventListener("resize", resizeCanvas);
@@ -273,7 +268,6 @@
   // 🎯 Pixel-perfect hit test (opaque pixels only)
   // ===========================================================
   const alphaMasks = [
-    { data: null, w: 0, h: 0 },
     { data: null, w: 0, h: 0 },
   ];
   const ALPHA_THRESHOLD = 10;

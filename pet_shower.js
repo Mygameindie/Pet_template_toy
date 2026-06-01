@@ -1,10 +1,9 @@
 // ===========================================================
 // 🧼 SHOWER MODE (No Toolbar Version)
-// ✅ 2 PET (pet1 / pet2)
+// ✅ 1 PET (pet1)
 // ✅ pet1 base: base.png / base_bath2.png
-// ✅ pet2 base: base_2.png / base_2_bath2.png
-// ✅ LAYER ORDER (ONE BIG POOL covering BOTH):
-//    pool2 (bottom, one big) -> both bases (middle) -> sponge -> pool1 (top, one big)
+// ✅ LAYER ORDER:
+//    pool2 (bottom) -> base (middle) -> sponge -> pool1 (top)
 // ===========================================================
 
 (() => {
@@ -53,19 +52,13 @@
 
   const baseSets = [
     { bath1: new Image(), bath2: new Image() }, // pet1
-    { bath1: new Image(), bath2: new Image() }, // pet2
   ];
 
   // pet1
   baseSets[0].bath1.src = "base.png";
   baseSets[0].bath2.src = "base_bath2.png";
 
-  // pet2
-  baseSets[1].bath1.src = "base_2.png";
-  baseSets[1].bath2.src = "base_2_bath2.png";
-
   const baths = [
-    { currentBaseKey: "bath1", lastDrawnBaseKey: "bath1", wasTouching: false, x: 0, y: 0, w: 0, h: 0 },
     { currentBaseKey: "bath1", lastDrawnBaseKey: "bath1", wasTouching: false, x: 0, y: 0, w: 0, h: 0 },
   ];
 
@@ -190,11 +183,10 @@
     const scaledH = 450;
     const scaledW = window.PetArt ? window.PetArt.widthForHeight(scaledH) : 400;
 
-    const leftX = canvas.width * 0.35 - scaledW / 2;
-    const rightX = canvas.width * 0.65 - scaledW / 2;
+    const centerX = canvas.width * 0.5 - scaledW / 2;
     const groundedY = groundY - scaledH;
 
-    const positions = [leftX, rightX];
+    const positions = [centerX];
 
     // Update bath rects
     for (let i = 0; i < baths.length; i++) {
@@ -204,10 +196,10 @@
       baths[i].h = scaledH;
     }
 
-    // ONE big pool rect covering both baths
-    const poolX = leftX;
+    // Pool rect covering the pet
+    const poolX = centerX;
     const poolY = groundedY;
-    const poolW = (rightX - leftX) + scaledW; // covers left bath to right bath
+    const poolW = scaledW;
     const poolH = scaledH;
 
     // helper: draw base with fallback
