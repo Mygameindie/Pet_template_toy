@@ -406,6 +406,14 @@
   };
 
   // ---- Public draw + lifecycle API (used by every mode) ---------------------
+  // Lets other systems (e.g. outfit_presets.js) refresh the Dress Up panel and
+  // button after they change window.selectedClothes / window.clothingColors.
+  window.refreshDressUpUI = function () {
+    normalizeState();
+    renderPanel();
+    updateButtonLabel();
+  };
+
   window.drawOutfitOverlay = function (ctx, state, x, y, w, h, petIndex) {
     if (window._modeName === "shower") return false;
     const p = typeof petIndex === "number" ? petIndex : activePet();
