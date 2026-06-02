@@ -11,9 +11,10 @@
 // Rules preserved from before:
 // - Top underwear + bottom underwear, OR a one-piece (mutually exclusive).
 // - A one-piece is a complete set: selecting it clears top/bottom underwear.
-// - Separate top/bottom underwear are independent: picking one only clears the
-//   one-piece — it does NOT force the other piece to match the same set, so you
-//   can mix tops and bottoms freely.
+// - Switching OFF a one-piece to a separate piece completes the set: picking
+//   top1 also puts on the matching bottom1 (and vice versa).
+// - Once you're already wearing separates, they are independent: changing one
+//   does NOT change the other, so you can mix freely (top1 + bottom2).
 // - Dress clears top + bottom; top or bottom clears dress.
 (() => {
   const DEFAULT_COLOR = "Original";
@@ -160,19 +161,43 @@
   }
 
   // ---- Clothing rules -------------------------------------------------------
+  // Set number = the trailing digits of an id ("bottomunderwear3" -> "3").
+  function setNumberFromId(id) {
+    const m = String(id || "").match(/(\d+)(?:_\d+)?$/);
+    return m ? m[1] : null;
+  }
+  // Find an item in a category whose set number matches n ("3" -> "bottomunderwear3").
+  function findItemBySetNumber(p, category, n) {
+    if (!n) return 0;
+    const items = (window.dressUpCatalog[p] && window.dressUpCatalog[p][category] && window.dressUpCatalog[p][category].items) || {};
+    const ids = Object.keys(items).filter(id => id !== "0");
+    return ids.find(id => setNumberFromId(id) === String(n)) || 0;
+  }
   function applyUnderwearRules(p, category, id) {
     if (id === 0 || id === "0") return;
+    const sc = window.selectedClothes[p];
+
     // A one-piece is a complete set: it replaces the separate top + bottom.
     if (category === "onepieceUnderwear") {
-      window.selectedClothes[p].topUnderwear = 0;
-      window.selectedClothes[p].bottomUnderwear = 0;
+      sc.topUnderwear = 0;
+      sc.bottomUnderwear = 0;
       return;
     }
-    // Separate underwear is independent — picking a top or a bottom only clears
-    // the (mutually exclusive) one-piece. It does NOT force the other piece to
-    // match the same set, so you can mix tops and bottoms freely.
+
     if (category === "topUnderwear" || category === "bottomUnderwear") {
-      window.selectedClothes[p].onepieceUnderwear = 0;
+      // Switching to separates always removes the (exclusive) one-piece.
+      const cameFromOnepiece = sc.onepieceUnderwear && sc.onepieceUnderwear !== "0";
+      sc.onepieceUnderwear = 0;
+
+      // Coming OFF a one-piece, complete the set by adding the matching
+      // counterpart (top1 -> also bottom1). But once you're already wearing
+      // separates, leave the other piece alone so you can mix freely
+      // (top1 + bottom1 -> top1 + bottom2).
+      if (cameFromOnepiece) {
+        const other = (category === "topUnderwear") ? "bottomUnderwear" : "topUnderwear";
+        const match = findItemBySetNumber(p, other, setNumberFromId(id));
+        if (match) sc[other] = match;
+      }
     }
   }
   function applyDressRules(p, category, id) {
