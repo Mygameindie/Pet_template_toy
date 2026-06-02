@@ -13,8 +13,9 @@
 //    Want a custom name? Use an object instead of a string:
 //        { id: "top2", label: "Cool Hoodie" }
 //
-//  Matching set numbers auto-pair the top & bottom underwear
-//  (e.g. "topunderwear3" + "bottomunderwear3" are treated as set 3).
+//  UNDERWEAR: a one-piece is a complete set and replaces the separate top +
+//  bottom. Separate top/bottom underwear are independent — you can mix any
+//  top with any bottom; they are not forced to share a set number.
 //
 //  This is a plain JS file (no network/JSON loading) so it can't glitch or
 //  fail to load mid-game — it's the smoothest, simplest setup.

@@ -9,10 +9,11 @@
 // tinting, the layering by z, and the girl/boy clothing rules.
 //
 // Rules preserved from before:
-// - Top underwear + bottom underwear, or a one-piece.
-// - One-piece clears top/bottom underwear.
-// - Top/bottom underwear clears one-piece and auto-pairs the matching
-//   set number.
+// - Top underwear + bottom underwear, OR a one-piece (mutually exclusive).
+// - A one-piece is a complete set: selecting it clears top/bottom underwear.
+// - Separate top/bottom underwear are independent: picking one only clears the
+//   one-piece — it does NOT force the other piece to match the same set, so you
+//   can mix tops and bottoms freely.
 // - Dress clears top + bottom; top or bottom clears dress.
 (() => {
   const DEFAULT_COLOR = "Original";
@@ -159,31 +160,19 @@
   }
 
   // ---- Clothing rules -------------------------------------------------------
-  function setNumberFromId(id) {
-    const m = String(id || "").match(/(\d+)(?:_\d+)?$/);
-    return m ? m[1] : null;
-  }
-  function findItemBySetNumber(p, category, n) {
-    if (!n) return 0;
-    const items = (window.dressUpCatalog[p] && window.dressUpCatalog[p][category] && window.dressUpCatalog[p][category].items) || {};
-    const ids = Object.keys(items).filter(id => id !== "0");
-    return ids.find(id => setNumberFromId(id) === String(n)) || 0;
-  }
   function applyUnderwearRules(p, category, id) {
-    if (p !== 0) return;                 // girl-only pairing
     if (id === 0 || id === "0") return;
+    // A one-piece is a complete set: it replaces the separate top + bottom.
     if (category === "onepieceUnderwear") {
       window.selectedClothes[p].topUnderwear = 0;
       window.selectedClothes[p].bottomUnderwear = 0;
       return;
     }
+    // Separate underwear is independent — picking a top or a bottom only clears
+    // the (mutually exclusive) one-piece. It does NOT force the other piece to
+    // match the same set, so you can mix tops and bottoms freely.
     if (category === "topUnderwear" || category === "bottomUnderwear") {
-      const n = setNumberFromId(id);
       window.selectedClothes[p].onepieceUnderwear = 0;
-      const topMatch = findItemBySetNumber(p, "topUnderwear", n);
-      const bottomMatch = findItemBySetNumber(p, "bottomUnderwear", n);
-      if (topMatch) window.selectedClothes[p].topUnderwear = topMatch;
-      if (bottomMatch) window.selectedClothes[p].bottomUnderwear = bottomMatch;
     }
   }
   function applyDressRules(p, category, id) {
