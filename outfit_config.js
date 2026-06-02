@@ -28,6 +28,7 @@ window.OUTFIT_CONFIG = {
   // Add a line here to create a brand-new clothing category, then add a
   // matching list under pet1 below.
   // -------------------------------------------------------------------------
+
   categories: [
     { key: "topUnderwear",      label: "Top Underwear",             z: 60  },
     { key: "bottomUnderwear",   label: "Bottom Underwear / Boxers", z: 50  },
@@ -36,28 +37,35 @@ window.OUTFIT_CONFIG = {
     { key: "bottom",            label: "Pants / Skirt",             z: 110 },
     { key: "dress",             label: "Dress",                     z: 130 },
     { key: "shoes",             label: "Shoes",                     z: 90  },
+    { key: "glove",             label: "Glove",                     z: 140 },
+    { key: "bunnysuitbow",      label: "Bunnysuit Bow",             z: 150 },
+    { key: "glasses",           label: "Glasses",                   z: 160 },
+    { key: "ears",              label: "Ears",                      z: 170 },
     { key: "hat",               label: "Hat",                       z: 180 },
   ],
 
-  // -------------------------------------------------------------------------
-  // PET 1 — the wardrobe. Add image base-names to each list.
-  // -------------------------------------------------------------------------
   pet1: {
-    topUnderwear:      ["topunderwear1"],
-    bottomUnderwear:   ["bottomunderwear1"],
+    topUnderwear:      ["topunderwear1", "topunderwear2", "topunderwear3", "topunderwear4"],
+    bottomUnderwear:   ["bottomunderwear1", "bottomunderwear2", "bottomunderwear3", "bottomunderwear4"],
     onepieceUnderwear: ["onepieceunderwear1"],
     top:               ["top1"],
     bottom:            ["pants1", "skirt1"],
     dress:             ["dress1"],
     shoes:             ["shoes1"],
+    glove:             ["glove1"],
+    bunnysuitbow:      ["bunnysuitbow1"],
+    glasses:           ["glasses1"],
+    ears:              ["ears1"],
     hat:               ["hat1"],
   },
 
-  // -------------------------------------------------------------------------
-  // DEFAULTS — what the pet is wearing when the game starts.
-  // Use an item id from the lists above, or 0 for "nothing".
-  // -------------------------------------------------------------------------
   defaults: {
-    pet1: { topUnderwear: "topunderwear1", bottomUnderwear: "bottomunderwear1" },
+    pet1: {
+      onepieceUnderwear: "onepieceunderwear1",
+      glove: "glove1",
+      shoes: "shoes1",
+      ears: "ears1",
+      bunnysuitbow: "bunnysuitbow1",
+    },
   },
 };
