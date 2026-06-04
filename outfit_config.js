@@ -13,10 +13,8 @@
 //    Want a custom name? Use an object instead of a string:
 //        { id: "top2", label: "Cool Hoodie" }
 //
-//  UNDERWEAR: a one-piece is a complete set and replaces the separate top +
-//  bottom. Switching OFF a one-piece to a separate piece completes the set
-//  (top1 -> also bottom1). Once you're already in separates you can mix any
-//  top with any bottom (top1 + bottom2) — they are not re-paired.
+//  Matching set numbers auto-pair the top & bottom underwear
+//  (e.g. "topunderwear3" + "bottomunderwear3" are treated as set 3).
 //
 //  This is a plain JS file (no network/JSON loading) so it can't glitch or
 //  fail to load mid-game — it's the smoothest, simplest setup.
@@ -49,10 +47,10 @@ window.OUTFIT_CONFIG = {
     topUnderwear:      ["topunderwear1", "topunderwear2", "topunderwear3", "topunderwear4"],
     bottomUnderwear:   ["bottomunderwear1", "bottomunderwear2", "bottomunderwear3", "bottomunderwear4"],
     onepieceUnderwear: ["onepieceunderwear1"],
-    top:               ["top1"],
+    top:               ["top1","top2"],
     bottom:            ["pants1", "skirt1"],
     dress:             ["dress1"],
-    shoes:             ["shoes1"],
+    shoes:             ["shoes1","shoes2","shoes3"],
     glove:             ["glove1"],
     bunnysuitbow:      ["bunnysuitbow1"],
     glasses:           ["glasses1"],
