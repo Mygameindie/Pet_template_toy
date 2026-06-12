@@ -472,6 +472,9 @@
   // ===========================================================
   // 💨 BLOWER — hold it under a skirt or dress to blow it up
   // ===========================================================
+  // The wind only affects these pet indexes: pet 1 only here.
+  const WIND_PETS = [0];
+
   function wearsSkirtLike(i) {
     const sc = window.selectedClothes && window.selectedClothes[i];
     if (!sc) return false;
@@ -506,7 +509,7 @@
       spawnGust(lastPointer.clientX, lastPointer.clientY);
     }
     pets.forEach((pet, i) => {
-      pet.wind = (blowing && inBlowZone(lastCanvasPoint, pet) && wearsSkirtLike(i)) ? 1 : 0;
+      pet.wind = (WIND_PETS.includes(i) && blowing && inBlowZone(lastCanvasPoint, pet) && wearsSkirtLike(i)) ? 1 : 0;
       if (window.ClothWind) window.ClothWind.set(i, pet.wind);
       // The pet is not amused: brief disgust + a troll stat hit while blown.
       if (pet.wind && now > (pet.nextWindTrollAt || 0)) {
