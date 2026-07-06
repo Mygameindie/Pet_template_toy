@@ -5,8 +5,8 @@
 //  HOW TO ADD A NEW CLOTHING ITEM (3 steps):
 //    1. Save the artwork as   images/<name>.png   (transparent PNG, same
 //       canvas size as the pet base so it lines up).
-//    2. Add "<name>" to the matching list below — under pet1.
-//       Example: add a 2nd top -> "top2".
+//    2. Add "<name>" to the matching list below — under pet1 (character 1)
+//       and/or pet2 (character 2). Example: add a 2nd top -> "top2".
 //    3. Refresh. Done. It shows up in the Dress Up panel automatically.
 //
 //  LABELS are made automatically from the name:  "top2" -> "Top 2".
@@ -43,6 +43,7 @@ window.OUTFIT_CONFIG = {
     { key: "top",               label: "Top",                       z: 120 },
     { key: "bottom",            label: "Pants / Skirt",             z: 110 },
     { key: "dress",             label: "Dress",                     z: 130 },
+    { key: "bodysuit",          label: "Bodysuit",                  z: 128 },
     { key: "shoes",             label: "Shoes",                     z: 90  },
     { key: "glove",             label: "Glove",                     z: 140 },
     { key: "bunnysuitbow",      label: "Bunnysuit Bow",             z: 150 },
@@ -58,12 +59,33 @@ window.OUTFIT_CONFIG = {
     top:               ["top1"],
     bottom:            ["pants1", "skirt1"],
     dress:             ["dress1"],
+    bodysuit:          ["bodysuit1"],
     shoes:             ["shoes1"],
     glove:             ["glove1"],
     bunnysuitbow:      ["bunnysuitbow1"],
     glasses:           ["glasses1"],
     ears:              ["ears1"],
     hat:               ["hat1"],
+  },
+
+  // -------------------------------------------------------------------------
+  // PET 2 — character 2 is a BOY. Boy clothing rules: no top underwear, no
+  // one-piece underwear, no dress, no skirt. He wears boxers and pants instead,
+  // but CAN wear a bunnysuit bow and a bodysuit. Art uses the "_2" suffix
+  // (e.g. "top1_2"); drop the matching PNGs in images/. (Any category omitted
+  // here is hidden from his Dress Up panel.)
+  // -------------------------------------------------------------------------
+  pet2: {
+    bottomUnderwear:   ["bottomunderwear1_2", "boxers1_2"],
+    top:               ["top1_2"],
+    bottom:            ["pants1_2"],
+    bodysuit:          ["bodysuit1_2"],
+    shoes:             ["shoes1_2"],
+    glove:             ["glove1_2"],
+    bunnysuitbow:      ["bunnysuitbow1_2"],
+    glasses:           ["glasses1_2"],
+    ears:              ["ears1_2"],
+    hat:               ["hat1_2"],
   },
 
   defaults: {
@@ -73,6 +95,12 @@ window.OUTFIT_CONFIG = {
       shoes: "shoes1",
       ears: "ears1",
       bunnysuitbow: "bunnysuitbow1",
+    },
+    pet2: {
+      bottomUnderwear: "boxers1_2",
+      glove: "glove1_2",
+      shoes: "shoes1_2",
+      hat: "hat1_2",
     },
   },
 };
