@@ -4,8 +4,11 @@
 // Persists to localStorage. Provides global API for all modes.
 // ===========================================================
 (() => {
-  const SAVE_KEY = "purelilypet_save";
-  const NUM_PETS = 1;
+  // Pet count and save key come from game_config.js. Every character uses the
+  // exact same stats system (same defaults, same decay rates, same effects).
+  const GAME = window.GAME_CONFIG || {};
+  const SAVE_KEY = GAME.saveKey || "purelilypet_save";
+  const NUM_PETS = (GAME.pets && GAME.pets.length) || 1;
 
   // Stat decay rates (points lost per second)
   const DECAY = {
@@ -96,7 +99,7 @@
   function doSave() {
     writeSave({
       pets: petStats.map(s => ({ ...s })),
-      outfits: Array.isArray(window.currentOutfits) ? window.currentOutfits.slice() : [0],
+      outfits: Array.isArray(window.currentOutfits) ? window.currentOutfits.slice() : new Array(NUM_PETS).fill(0),
       muted,
       gardenInventory: { ...gardenInventory },
       savedAt: Date.now(),

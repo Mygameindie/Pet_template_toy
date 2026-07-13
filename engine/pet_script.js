@@ -10,6 +10,11 @@
   const groundHeight = 100;
   let groundY = canvas.height - groundHeight;
 
+  // Characters come from game_config.js (count, art suffix, position, tint).
+  const PET_CFG = (window.GAME_CONFIG && Array.isArray(window.GAME_CONFIG.pets) && window.GAME_CONFIG.pets.length)
+    ? window.GAME_CONFIG.pets
+    : [{ artSuffix: '', xFrac: 0.5, drawFilter: 'none' }];
+
   // ===========================================================
   // 🖼️ Images
   // Clothes are handled globally by outfit_system.js
@@ -22,7 +27,9 @@
     return img;
   }
 
-  // Base set for the pet.
+  // Per-pet base sets.
+  // Each pet's art uses its config artSuffix: "" -> base.png, "_2" -> base_2.png.
+  // If missing, we fall back to pet1 art and apply the pet's drawFilter so it is still visually distinct.
   function loadBaseSet(suffix) {
     return {
       stand: createImg(`base${suffix}.png`),
@@ -37,10 +44,8 @@
     };
   }
 
-  // === Base images (single pet) ===
-  const baseSets = [
-    loadBaseSet(''),
-  ];
+  // === Base images (per pet) ===
+  const baseSets = PET_CFG.map(c => loadBaseSet(c.artSuffix || ''));
 
   // NOTE: Do NOT create a clothes button here.
   // outfit_system.js creates ONE global button and keeps outfit state in window.currentOutfit.
@@ -51,15 +56,16 @@
     ctx.drawImage(img, x, y, w, h);
   }
 
-  // === Pets (2) ===
+  // === Pets (from config) ===
   function makePet(x, idx) {
     const p = {
       x,
       y: canvas.height - 170 - 170,
       w: 400,
       h: 450,
-      type: 'pet1',
-      drawFilter: 'none',
+      type: 'pet' + (idx + 1),
+      // If this pet's art is missing, we tint the fallback so it still looks like a different pet.
+      drawFilter: PET_CFG[idx].drawFilter || 'none',
       dragging: false,
       oldx: 0,
       oldy: 0,
@@ -75,9 +81,9 @@
   }
 
   
-  const pets = [
-    makePet(canvas.width * 0.5, 0),
-  ];
+  const pets = PET_CFG.map((c, i) =>
+    makePet(canvas.width * (c.xFrac != null ? c.xFrac : (i + 1) / (PET_CFG.length + 1)), i)
+  );
 
   // === Original-size base (uniform for both pets) ===
   // Match every pet's box to pet 1's base art aspect ratio, so both pets render
@@ -215,9 +221,9 @@
     canvas.height = window.innerHeight;
     groundY = canvas.height - groundHeight;
 
-    // keep pet in bounds
-    pets[0].x = Math.min(pets[0].x, canvas.width - pets[0].w / 2);
+    // keep pets in bounds
     pets.forEach(p => {
+      p.x = Math.max(p.w / 2, Math.min(p.x, canvas.width - p.w / 2));
       if (p.y + p.h / 2 > groundY) {
         p.y = groundY - p.h / 2;
         p.oldy = p.y;
@@ -304,14 +310,14 @@
     pets.forEach((pet, i) => {
       const state = getState(pet);
 
-      // choose base set
+      // choose base set; if this pet's asset is missing, use pet1's and tint
       let set = baseSets[i] || baseSets[0];
       let img = set[state];
       let useTintFallback = false;
       if (!img || img._failed) {
         set = baseSets[0];
         img = set[state];
-        useTintFallback = (i === 1);
+        useTintFallback = (i !== 0);
       }
 
       // Toy3-style: while a toy is touching this pet, swap to the toy-touched
@@ -321,7 +327,7 @@
         let toyImg = set.toy;
         if (!toyImg || toyImg._failed) {
           toyImg = baseSets[0].toy;
-          if (toyImg && !toyImg._failed && i === 1) useTintFallback = true;
+          if (toyImg && !toyImg._failed && i !== 0) useTintFallback = true;
         }
         if (toyImg && !toyImg._failed) img = toyImg;
       }

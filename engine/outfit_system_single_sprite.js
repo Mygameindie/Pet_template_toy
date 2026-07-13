@@ -45,9 +45,42 @@
   function img(src) {
     const im = new Image();
     im._failed = false;
-    im.onerror = () => { im._failed = true; };
+    im.onerror = () => { im._failed = true; scheduleArtRefresh(); };
+    im.onload = () => { scheduleArtRefresh(); };
     im.src = src; // asset_path_fix.js rewrites bare names to images/<name>
     return im;
+  }
+
+  // Characters can have different wardrobes (e.g. pet 2 has no hat art). When
+  // an item's PNG finishes loading — or fails — re-check everything once so
+  // missing items disappear from the panel, invalid selections get cleared,
+  // and the button count stays honest for whichever character is active.
+  let artRefreshTimer = 0;
+  function scheduleArtRefresh() {
+    clearTimeout(artRefreshTimer);
+    artRefreshTimer = setTimeout(() => {
+      validateSelections();
+      if (panel && panel.style.display !== "none") renderPanel();
+      updateButtonLabel();
+    }, 60);
+  }
+
+  // An item is available if its art hasn't failed to load. Id 0 ("None") is
+  // always available. Art that is still loading counts as available; if it
+  // later fails, scheduleArtRefresh() hides it.
+  function itemAvailable(it) {
+    if (!it) return false;
+    if (it.id === 0 || it.id === "0") return true;
+    return !!(it.img && !it.img._failed);
+  }
+  function availableItems(p, key) {
+    const cat = (window.dressUpCatalog[p] || {})[key];
+    const out = {};
+    if (!cat) return out;
+    Object.entries(cat.items || {}).forEach(([id, it]) => {
+      if (itemAvailable(it)) out[id] = it;
+    });
+    return out;
   }
 
   // "top2" -> "Top 2", "top1_2" -> "Top 1", "boxers1_2" -> "Boxers 1"
@@ -91,13 +124,21 @@
     key: c.key, label: c.label || c.key, z: Number(c.z) || 100,
   }));
 
+  // Every pet shares the same dress-up system. Pet count comes from
+  // game_config.js; each pet reads its wardrobe from cfg.pet1 / cfg.pet2 / ...
+  // in outfit_config.js (same structure per pet, art suffixed per pet).
+  const NUM_PETS = (window.GAME_CONFIG && Array.isArray(window.GAME_CONFIG.pets) && window.GAME_CONFIG.pets.length) || 1;
+  const PETS = Array.from({ length: NUM_PETS }, (_, i) => i);
+  const wardrobeFor = p => cfg["pet" + (p + 1)] || {};
+  const defaultsFor = p => (cfg.defaults && cfg.defaults["pet" + (p + 1)]) || {};
+
   function buildCatalog() {
-    const catalog = { 0: {} };
-    [0].forEach(p => cats.forEach(c => { catalog[p][c.key] = emptyCat(c); }));
-    const wardrobes = { 0: cfg.pet1 || {} };
-    [0].forEach(p => {
+    const catalog = {};
+    PETS.forEach(p => { catalog[p] = {}; cats.forEach(c => { catalog[p][c.key] = emptyCat(c); }); });
+    PETS.forEach(p => {
+      const wardrobe = wardrobeFor(p);
       cats.forEach(c => {
-        const list = wardrobes[p][c.key];
+        const list = wardrobe[c.key];
         if (!Array.isArray(list)) return;
         list.forEach(entry => {
           const it = normItem(entry);
@@ -109,9 +150,8 @@
   }
 
   const defaults = (() => {
-    const out = { 0: {} };
-    const src = { 0: (cfg.defaults && cfg.defaults.pet1) || {} };
-    [0].forEach(p => cats.forEach(c => { out[p][c.key] = src[p][c.key] != null ? src[p][c.key] : 0; }));
+    const out = {};
+    PETS.forEach(p => { out[p] = {}; const src = defaultsFor(p); cats.forEach(c => { out[p][c.key] = src[c.key] != null ? src[c.key] : 0; }); });
     return out;
   })();
 
@@ -119,14 +159,14 @@
   if (typeof window.activePetIndex !== "number") window.activePetIndex = 0;
 
   function makeSelected() {
-    return [0].map(p => {
+    return PETS.map(p => {
       const o = {};
       cats.forEach(c => o[c.key] = defaults[p][c.key] != null ? defaults[p][c.key] : 0);
       return o;
     });
   }
   function makeColors() {
-    return [0].map(() => {
+    return PETS.map(() => {
       const o = {};
       cats.forEach(c => o[c.key] = DEFAULT_COLOR);
       return o;
@@ -135,22 +175,46 @@
 
   window.selectedClothes = window.selectedClothes || makeSelected();
   window.clothingColors = window.clothingColors || makeColors();
-  window.currentOutfits = [0];
+  window.currentOutfits = PETS.map(() => 0);
   window.currentOutfit = 0;
 
   function activePet() {
-    return 0;
+    const p = window.activePetIndex;
+    return PETS.includes(p) ? p : 0;
   }
 
+  // Only show categories this character actually owns clothes for. This is what
+  // enforces the boy clothing rules: character 2 (boy) has no top underwear,
+  // one-piece, dress, or bunnysuit-bow items, so those tabs never appear.
+  // Items whose art is missing don't count either, so a character without a
+  // hat PNG simply has no Hat tab — each character's panel matches its art.
   function catKeys(p = activePet()) {
-    const catalog = window.dressUpCatalog[p] || window.dressUpCatalog[0] || {};
-    return cats.map(c => c.key).filter(k => !!catalog[k]);
+    return cats.map(c => c.key).filter(k =>
+      Object.keys(availableItems(p, k)).length > 1 // more than just "None"
+    );
+  }
+
+  // Clear any worn item that this character doesn't actually have (not in its
+  // catalog, or its art failed to load). Keeps each character's outfit
+  // consistent with its own wardrobe after switching characters or presets.
+  function validateSelections() {
+    PETS.forEach(p => {
+      const sc = window.selectedClothes && window.selectedClothes[p];
+      if (!sc) return;
+      const catalog = window.dressUpCatalog[p] || {};
+      cats.forEach(c => {
+        const id = sc[c.key];
+        if (id === 0 || id === "0" || id == null) return;
+        const it = catalog[c.key] && catalog[c.key].items && catalog[c.key].items[id];
+        if (!itemAvailable(it)) sc[c.key] = 0;
+      });
+    });
   }
 
   function normalizeState() {
     const sel = makeSelected();
     const cols = makeColors();
-    [0].forEach(p => {
+    PETS.forEach(p => {
       window.selectedClothes[p] = window.selectedClothes[p] || {};
       window.clothingColors[p] = window.clothingColors[p] || {};
       cats.forEach(c => {
@@ -202,13 +266,20 @@
   }
   function applyDressRules(p, category, id) {
     if (id === 0 || id === "0") return;
-    if (category === "dress") {
-      window.selectedClothes[p].top = 0;
-      window.selectedClothes[p].bottom = 0;
+    const sc = window.selectedClothes[p];
+    // Full-body garments (dress, bodysuit) replace the separate top + bottom,
+    // and replace each other (you can't wear a dress and a bodysuit at once).
+    if (category === "dress" || category === "bodysuit") {
+      sc.top = 0;
+      sc.bottom = 0;
+      sc.dress = (category === "dress") ? sc.dress : 0;
+      sc.bodysuit = (category === "bodysuit") ? sc.bodysuit : 0;
       return;
     }
+    // Putting on a separate top/bottom removes any full-body garment.
     if (category === "top" || category === "bottom") {
-      window.selectedClothes[p].dress = 0;
+      sc.dress = 0;
+      sc.bodysuit = 0;
     }
   }
   function applyClothingRules(p, category, id) {
@@ -314,7 +385,13 @@
 
   function updateButtonLabel() {
     const p = activePet();
-    const count = catKeys(p).map(k => window.selectedClothes[p] && window.selectedClothes[p][k]).filter(v => v !== 0 && v !== "0" && v != null).length;
+    // Count only items this character actually has — a selection whose art is
+    // missing (e.g. a hat this character has no PNG for) doesn't count.
+    const count = catKeys(p).filter(k => {
+      const id = window.selectedClothes[p] && window.selectedClothes[p][k];
+      if (id === 0 || id === "0" || id == null) return false;
+      return itemAvailable(availableItems(p, k)[id]);
+    }).length;
     dressBtn.textContent = `👗 Dress Up (${count} item${count === 1 ? "" : "s"})`;
   }
 
@@ -379,6 +456,17 @@
     title.appendChild(close);
     panel.appendChild(title);
 
+    // Which character to dress (both share the same wardrobe system)
+    const petRow = document.createElement("div");
+    petRow.style.cssText = "display:flex;gap:6px;margin-bottom:8px;";
+    PETS.forEach(pi => {
+      const b = btn(`🐾 Character ${pi + 1}`);
+      if (pi === p) b.style.cssText += "background:#fff7e6;border:2px solid #f59e0b;font-weight:700;";
+      b.onclick = () => { if (typeof window.setActivePet === "function") window.setActivePet(pi); };
+      petRow.appendChild(b);
+    });
+    panel.appendChild(petRow);
+
     // Category tabs
     const row = document.createElement("div");
     row.style.cssText = "display:flex;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;";
@@ -401,7 +489,8 @@
 
     const items = document.createElement("div");
     items.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;";
-    Object.entries(cat.items || {}).forEach(([id, it]) => {
+    // Only offer items this character has art for.
+    Object.entries(availableItems(p, selectedCategory)).forEach(([id, it]) => {
       const active = String(window.selectedClothes[p] && window.selectedClothes[p][selectedCategory]) === String(id);
       const b = itemThumb(it, active, () => {
         window.selectedClothes[p][selectedCategory] = id === "0" ? 0 : id;
@@ -449,6 +538,7 @@
   // button after they change window.selectedClothes / window.clothingColors.
   window.refreshDressUpUI = function () {
     normalizeState();
+    validateSelections();
     renderPanel();
     updateButtonLabel();
   };
@@ -498,14 +588,16 @@
     updateButtonLabel();
   };
 
-  window.setActivePet = function () {
-    window.activePetIndex = 0;
+  window.setActivePet = function (petIndex) {
+    window.activePetIndex = PETS.includes(petIndex) ? petIndex : 0;
+    validateSelections();
     renderPanel();
     updateButtonLabel();
   };
 
   // ---- Init -----------------------------------------------------------------
   normalizeState();
+  validateSelections();
   renderPanel();
   updateButtonLabel();
 })();
