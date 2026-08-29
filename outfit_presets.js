@@ -20,6 +20,24 @@
 //      clothes: { top: "top1", bottom: "pants1", shoes: "shoes1" },
 //      colors:  { top: "Blue", bottom: "Green" } }
 //
+//  BOY / GIRL: the pet's gender is set in pet_gender.js. A preset can give the
+//  boy his own version of the look with a `boy` block (and the girl a `girl`
+//  block); the top-level clothes/colors are the default for whoever has no
+//  block. This is how the same preset dresses the girl in a dress and the boy
+//  in a top + pants:
+//
+//    { name: "Party", emoji: "🎀",
+//      clothes: { dress: "dress1", shoes: "shoes1" },       // girl (default)
+//      colors:  { dress: "Red" },
+//      boy: {                                               // boy version
+//        clothes: { top: "top1", bottom: "pants1", shoes: "shoes1" },
+//        colors:  { top: "Red" },
+//      } }
+//
+//  You can write ids either way ("top1" or "top1_2") — they are translated to
+//  the id that exists for the gender being dressed, and anything that gender
+//  doesn't have is simply skipped (taken off).
+//
 //  NOTE: presets only use item ids that exist in outfit_config.js. If you add
 //  new clothes there, you can reference them here right away.
 // ===========================================================
@@ -36,23 +54,42 @@ window.OUTFIT_PRESETS = [
     emoji: "🌸",
     clothes: { top: "top1", bottom: "skirt1", shoes: "shoes1", hat: "hat1" },
     colors:  { top: "Pink", bottom: "Purple" },
+    // Boy version: no skirt — same look with pants.
+    boy: {
+      clothes: { top: "top1", bottom: "pants1", shoes: "shoes1", hat: "hat1" },
+      colors:  { top: "Pink", bottom: "Purple" },
+    },
   },
   {
     name: "Party Dress",
     emoji: "🎀",
     clothes: { dress: "dress1", shoes: "shoes1", hat: "hat1" },
     colors:  { dress: "Red", hat: "Yellow" },
+    // Boy version: no dress — a red top + pants instead.
+    boy: {
+      clothes: { top: "top1", bottom: "pants1", shoes: "shoes1", hat: "hat1" },
+      colors:  { top: "Red", hat: "Yellow" },
+    },
   },
   {
     name: "Comfy",
     emoji: "🩲",
     clothes: { topUnderwear: "topunderwear1", bottomUnderwear: "bottomunderwear1" },
+    // Boy version: no top underwear — just boxers.
+    boy: {
+      clothes: { bottomUnderwear: "boxers1" },
+    },
   },
   {
     name: "Swimsuit",
     emoji: "🩱",
     clothes: { onepieceUnderwear: "onepieceunderwear1" },
     colors:  { onepieceUnderwear: "Cyan" },
+    // Boy version: no one-piece — he swims in boxers.
+    boy: {
+      clothes: { bottomUnderwear: "boxers1" },
+      colors:  { bottomUnderwear: "Cyan" },
+    },
   },
   {
     name: "Birthday Suit",
@@ -75,6 +112,43 @@ window.OUTFIT_PRESETS = [
     return Object.keys((window.selectedClothes && window.selectedClothes[0]) || {});
   }
 
+  function gender() {
+    return (window.PetGender && window.PetGender.get()) === "boy" ? "boy" : "girl";
+  }
+
+  // Presets are written with plain ids ("top1"). The boy's wardrobe uses the
+  // "_2" names ("top1_2"), so translate each id to the one that actually
+  // exists for the gender being dressed. An item that gender doesn't have
+  // (a dress on a boy) resolves to 0 (None) instead of breaking the look.
+  function resolveItem(category, id) {
+    if (id === 0 || id === "0" || id == null) return 0;
+    const items = (window.dressUpCatalog && window.dressUpCatalog[0] &&
+      window.dressUpCatalog[0][category] && window.dressUpCatalog[0][category].items) || null;
+    if (!items) return id;
+    if (window.PetGender) {
+      const forGender = window.PetGender.itemId(id);
+      if (items[forGender]) return forGender;
+    }
+    if (items[id]) return id;
+    const stripped = String(id).replace(/_\d+$/, "");
+    if (items[stripped]) return stripped;
+    return 0;
+  }
+
+  // A preset can define a different look per gender: a `girl`/`boy` block
+  // ({ clothes, colors }) wins for that gender; otherwise the preset's
+  // top-level clothes/colors are used.
+  function outfitForGender(preset) {
+    const per = preset[gender()];
+    // A per-gender clothes list is a complete look of its own, so it does NOT
+    // inherit the other look's colors (those may belong to garments this
+    // gender isn't wearing) — omit colors and you get Original.
+    if (per && per.clothes) return { clothes: per.clothes, colors: per.colors || {} };
+    // Colors-only override: same clothes, different colors for this gender.
+    if (per && per.colors) return { clothes: preset.clothes || {}, colors: per.colors };
+    return { clothes: preset.clothes || {}, colors: preset.colors || {} };
+  }
+
   // Apply a full preset to the pet (index 0). Every category not named by the
   // preset is cleared, so a preset always defines the complete look.
   function applyPreset(preset) {
@@ -86,11 +160,10 @@ window.OUTFIT_PRESETS = [
     const sel = (window.selectedClothes[0] = window.selectedClothes[0] || {});
     const col = (window.clothingColors[0] = window.clothingColors[0] || {});
 
-    const clothes = preset.clothes || {};
-    const colors = preset.colors || {};
+    const { clothes, colors } = outfitForGender(preset);
 
     categoryKeys().forEach(k => {
-      sel[k] = (clothes[k] != null) ? clothes[k] : 0;
+      sel[k] = (clothes[k] != null) ? resolveItem(k, clothes[k]) : 0;
       col[k] = colors[k] || DEFAULT_COLOR;
     });
 

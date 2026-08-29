@@ -38,6 +38,10 @@
   }
 
   // === Base images (single pet) ===
+  // These plain names are the GIRL art. When pet_gender.js is set to "boy"
+  // (or the player flips the switch) it loads the "_2" version of each of
+  // these files instead — base_2.png, base_1_2.png — and falls back to the
+  // plain file if that boy picture doesn't exist yet.
   const baseSets = [
     loadBaseSet(''),
   ];
@@ -99,6 +103,18 @@
   const baseImg = baseSets[0].stand;
   if (baseImg && baseImg.complete && baseImg.naturalWidth) syncPetAspect();
   else if (baseImg) baseImg.addEventListener('load', syncPetAspect);
+
+  // Boy and girl art can have different proportions. pet_gender.js re-points
+  // the base images when the gender is switched, so re-measure once the new
+  // picture is in (see pet_gender.js for the girl/boy setting).
+  if (window.PetGender && typeof window.PetGender.onChange === 'function') {
+    window.PetGender.onChange(() => {
+      const im = baseSets[0].stand;
+      if (!im) return;
+      if (im.complete && im.naturalWidth) syncPetAspect();
+      else im.addEventListener('load', syncPetAspect, { once: true });
+    });
+  }
 
   // === Physics ===
   const gravity = 1.2;

@@ -2,16 +2,32 @@
 // 👗 outfit_config.js — THE one place to add / edit clothes
 // ===========================================================
 //
+//  This template has ONE pet, and that pet can be a GIRL or a BOY.
+//  The gender is set in pet_gender.js ( gender: "girl" / "boy" ), and the
+//  pet only ever wears the wardrobe of the gender it currently is:
+//
+//      girl: { ... }   <- what she can wear
+//      boy:  { ... }   <- what he can wear
+//
 //  HOW TO ADD A NEW CLOTHING ITEM (3 steps):
 //    1. Save the artwork as   images/<name>.png   (transparent PNG, same
 //       canvas size as the pet base so it lines up).
-//    2. Add "<name>" to the matching list below — under pet1 (character 1)
-//       and/or pet2 (character 2). Example: add a 2nd top -> "top2".
+//    2. Add "<name>" to the matching list below — under girl and/or boy.
+//       Example: add a 2nd top for the girl -> "top2".
 //    3. Refresh. Done. It shows up in the Dress Up panel automatically.
 //
 //  LABELS are made automatically from the name:  "top2" -> "Top 2".
 //    Want a custom name? Use an object instead of a string:
 //        { id: "top2", label: "Cool Hoodie" }
+//
+//  BOY ART uses the same name with "_2" added:  top1 -> top1_2. That is the
+//  same suffix pet_gender.js uses for his body art (base.png -> base_2.png),
+//  so a whole boy character is just "the _2 pictures".
+//
+//  BOY CLOTHING RULES come from this file: he simply has no dress, skirt,
+//  top-underwear or one-piece list, so those tabs never appear for him.
+//  A category left out of a gender's list is hidden from that gender's
+//  Dress Up panel — that is all it takes to change what he can wear.
 //
 //  UNDERWEAR: a one-piece is a complete set and replaces the separate top +
 //  bottom. Switching OFF a one-piece to a separate piece completes the set
@@ -33,7 +49,7 @@ window.OUTFIT_CONFIG = {
   // -------------------------------------------------------------------------
   // CATEGORIES — order, display name, and draw layer (z). Higher z = on top.
   // Add a line here to create a brand-new clothing category, then add a
-  // matching list under pet1 below.
+  // matching list under girl and/or boy below.
   // -------------------------------------------------------------------------
 
   categories: [
@@ -52,7 +68,11 @@ window.OUTFIT_CONFIG = {
     { key: "hat",               label: "Hat",                       z: 180 },
   ],
 
-  pet1: {
+  // -------------------------------------------------------------------------
+  // GIRL — worn when pet_gender.js says gender: "girl". Plain art names
+  // (top1.png, dress1.png ...), same as before.
+  // -------------------------------------------------------------------------
+  girl: {
     topUnderwear:      ["topunderwear1", "topunderwear2", "topunderwear3", "topunderwear4"],
     bottomUnderwear:   ["bottomunderwear1", "bottomunderwear2", "bottomunderwear3", "bottomunderwear4"],
     onepieceUnderwear: ["onepieceunderwear1"],
@@ -69,13 +89,13 @@ window.OUTFIT_CONFIG = {
   },
 
   // -------------------------------------------------------------------------
-  // PET 2 — character 2 is a BOY. Boy clothing rules: no top underwear, no
-  // one-piece underwear, no dress, no skirt. He wears boxers and pants instead,
-  // but CAN wear a bunnysuit bow and a bodysuit. Art uses the "_2" suffix
-  // (e.g. "top1_2"); drop the matching PNGs in images/. (Any category omitted
-  // here is hidden from his Dress Up panel.)
+  // BOY — worn when pet_gender.js says gender: "boy". Boy clothing rules:
+  // no top underwear, no one-piece underwear, no dress, no skirt. He wears
+  // boxers and pants instead, but CAN wear a bunnysuit bow and a bodysuit.
+  // Art uses the "_2" suffix (e.g. "top1_2"); drop the matching PNGs in
+  // images/. Any category left out here is hidden from his Dress Up panel.
   // -------------------------------------------------------------------------
-  pet2: {
+  boy: {
     bottomUnderwear:   ["bottomunderwear1_2", "boxers1_2"],
     top:               ["top1_2"],
     bottom:            ["pants1_2"],
@@ -88,15 +108,16 @@ window.OUTFIT_CONFIG = {
     hat:               ["hat1_2"],
   },
 
+  // What the pet is already wearing when the game starts, per gender.
   defaults: {
-    pet1: {
+    girl: {
       onepieceUnderwear: "onepieceunderwear1",
       glove: "glove1",
       shoes: "shoes1",
       ears: "ears1",
       bunnysuitbow: "bunnysuitbow1",
     },
-    pet2: {
+    boy: {
       bottomUnderwear: "boxers1_2",
       glove: "glove1_2",
       shoes: "shoes1_2",

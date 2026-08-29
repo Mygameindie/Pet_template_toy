@@ -16,6 +16,13 @@
 // - Once you're already wearing separates, they are independent: changing one
 //   does NOT change the other, so you can mix freely (top1 + bottom2).
 // - Dress clears top + bottom; top or bottom clears dress.
+//
+// GENDER: there is ONE pet, and it is a girl or a boy (set in pet_gender.js).
+// The wardrobe it can use is simply OUTFIT_CONFIG.girl or OUTFIT_CONFIG.boy —
+// that is what enforces the boy clothing rules (he has no dress / skirt /
+// top-underwear / one-piece list, so those tabs never appear for him).
+// Flipping the gender at runtime rebuilds the panel and carries the outfit
+// across where the other gender has a matching item ("top1" <-> "top1_2").
 (() => {
   const DEFAULT_COLOR = "Original";
   const COLORS = {
@@ -37,8 +44,9 @@
       { key: "shoes", label: "Shoes", z: 90 },
       { key: "hat", label: "Hat", z: 180 },
     ],
-    pet1: {},
-    defaults: { pet1: {} },
+    girl: {},
+    boy: {},
+    defaults: { girl: {}, boy: {} },
   };
 
   // ---- Helpers --------------------------------------------------------------
@@ -91,29 +99,45 @@
     key: c.key, label: c.label || c.key, z: Number(c.z) || 100,
   }));
 
+  // ---- Gender: which wardrobe this one pet is using -------------------------
+  // "girl" / "boy" from pet_gender.js. The old pet1/pet2 key names still work
+  // so an older outfit_config.js keeps loading (pet1 = girl, pet2 = boy).
+  function gender() {
+    return (window.PetGender && window.PetGender.get()) === "boy" ? "boy" : "girl";
+  }
+  function wardrobe() {
+    const g = gender();
+    return cfg[g] || cfg[g === "boy" ? "pet2" : "pet1"] || {};
+  }
+  function defaultWardrobe() {
+    const d = cfg.defaults || {};
+    const g = gender();
+    return d[g] || d[g === "boy" ? "pet2" : "pet1"] || {};
+  }
+
   function buildCatalog() {
     const catalog = { 0: {} };
-    [0].forEach(p => cats.forEach(c => { catalog[p][c.key] = emptyCat(c); }));
-    const wardrobes = { 0: cfg.pet1 || {} };
-    [0].forEach(p => {
-      cats.forEach(c => {
-        const list = wardrobes[p][c.key];
-        if (!Array.isArray(list)) return;
-        list.forEach(entry => {
-          const it = normItem(entry);
-          if (it) catalog[p][c.key].items[it.id] = { id: it.id, label: it.label, img: img(`${it.prefix}.png`) };
-        });
+    cats.forEach(c => { catalog[0][c.key] = emptyCat(c); });
+    const list0 = wardrobe();
+    cats.forEach(c => {
+      const list = list0[c.key];
+      if (!Array.isArray(list)) return;
+      list.forEach(entry => {
+        const it = normItem(entry);
+        if (it) catalog[0][c.key].items[it.id] = { id: it.id, label: it.label, img: img(`${it.prefix}.png`) };
       });
     });
     return catalog;
   }
 
-  const defaults = (() => {
+  function buildDefaults() {
     const out = { 0: {} };
-    const src = { 0: (cfg.defaults && cfg.defaults.pet1) || {} };
-    [0].forEach(p => cats.forEach(c => { out[p][c.key] = src[p][c.key] != null ? src[p][c.key] : 0; }));
+    const src = defaultWardrobe();
+    cats.forEach(c => { out[0][c.key] = src[c.key] != null ? src[c.key] : 0; });
     return out;
-  })();
+  }
+
+  let defaults = buildDefaults();
 
   window.dressUpCatalog = buildCatalog();
   if (typeof window.activePetIndex !== "number") window.activePetIndex = 0;
@@ -142,9 +166,15 @@
     return 0;
   }
 
+  // Only the categories this gender actually has clothes for. This is what
+  // enforces the boy clothing rules: the boy list has no dress / skirt /
+  // top-underwear / one-piece items, so those tabs simply don't exist for him.
   function catKeys(p = activePet()) {
     const catalog = window.dressUpCatalog[p] || window.dressUpCatalog[0] || {};
-    return cats.map(c => c.key).filter(k => !!catalog[k]);
+    return cats.map(c => c.key).filter(k => {
+      const items = catalog[k] && catalog[k].items;
+      return !!items && Object.keys(items).length > 1; // more than just "None"
+    });
   }
 
   function normalizeState() {
@@ -379,6 +409,19 @@
     title.appendChild(close);
     panel.appendChild(title);
 
+    // Girl / Boy switch (hide it with showSwitchButton: false in pet_gender.js)
+    if (window.PetGender && window.PetGender.canSwitch()) {
+      const genderRow = document.createElement("div");
+      genderRow.style.cssText = "display:flex;gap:6px;margin-bottom:8px;";
+      window.PetGender.genders().forEach(g => {
+        const b = btn(`${window.PetGender.emoji(g)} ${window.PetGender.label(g)}`);
+        if (g === gender()) b.style.cssText += "background:#fff7e6;border:2px solid #f59e0b;font-weight:700;";
+        b.onclick = () => { window.PetGender.set(g); };
+        genderRow.appendChild(b);
+      });
+      panel.appendChild(genderRow);
+    }
+
     // Category tabs
     const row = document.createElement("div");
     row.style.cssText = "display:flex;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;";
@@ -444,6 +487,59 @@
     renderPanel();
   };
 
+  // ---- Gender switching -----------------------------------------------------
+  // One pet, two wardrobes. When the gender flips, rebuild the catalog from
+  // the other list and carry the outfit across: an item with a matching id in
+  // the new wardrobe stays on ("top1" -> "top1_2"), anything that gender does
+  // not have (a dress on a boy) comes off.
+  const UNDERWEAR_KEYS = ["topUnderwear", "bottomUnderwear", "onepieceUnderwear"];
+
+  function carryOutfitAcross() {
+    const sc = window.selectedClothes[0] || {};
+    const catalog = window.dressUpCatalog[0] || {};
+    const fallback = defaults[0] || {};
+    const before = { ...sc };
+    cats.forEach(c => {
+      const items = (catalog[c.key] && catalog[c.key].items) || {};
+      const id = sc[c.key];
+      if (id === 0 || id === "0" || id == null) {
+        sc[c.key] = 0;
+        return;
+      }
+      const translated = window.PetGender ? window.PetGender.itemId(id) : id;
+      if (items[translated]) sc[c.key] = translated;
+      else if (items[id]) sc[c.key] = id;
+      else sc[c.key] = items[fallback[c.key]] ? fallback[c.key] : 0;
+    });
+
+    // Underwear is the one thing we don't want to silently drop: if the new
+    // gender has no version of what was worn (a girl's one-piece on a boy),
+    // put on that gender's default underwear instead of leaving the pet bare.
+    const wore = UNDERWEAR_KEYS.some(k => before[k] && before[k] !== "0");
+    const wears = UNDERWEAR_KEYS.some(k => sc[k] && sc[k] !== "0");
+    if (wore && !wears) {
+      UNDERWEAR_KEYS.forEach(k => {
+        const items = (catalog[k] && catalog[k].items) || {};
+        const d = fallback[k];
+        if (d && items[d]) sc[k] = d;
+      });
+    }
+  }
+
+  function rebuildForGender() {
+    window.dressUpCatalog = buildCatalog();
+    defaults = buildDefaults();
+    carryOutfitAcross();
+    normalizeState();
+    const keys = catKeys();
+    if (!keys.includes(selectedCategory)) selectedCategory = keys[0] || (cats[0] && cats[0].key);
+    renderPanel();
+    updateButtonLabel();
+  }
+
+  // Also exposed so other code can force a refresh after editing the config.
+  window.rebuildDressUpForGender = rebuildForGender;
+
   // ---- Public draw + lifecycle API (used by every mode) ---------------------
   // Lets other systems (e.g. outfit_presets.js) refresh the Dress Up panel and
   // button after they change window.selectedClothes / window.clothingColors.
@@ -508,4 +604,8 @@
   normalizeState();
   renderPanel();
   updateButtonLabel();
+
+  if (window.PetGender && typeof window.PetGender.onChange === "function") {
+    window.PetGender.onChange(rebuildForGender);
+  }
 })();
