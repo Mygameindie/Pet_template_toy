@@ -71,8 +71,6 @@
       id: String(id),
       label: entry.label || humanize(id),
       prefix: String(entry.prefix || id),
-      // A single garment can hide the pet's back parts — see outfitHidesBack.
-      hidesBack: !!entry.hidesBack,
     };
   }
 
@@ -80,8 +78,6 @@
     return {
       label: def.label || def.key,
       z: Number(def.z) || 100,
-      // A whole category can hide the pet's back parts — see outfitHidesBack.
-      hidesBack: !!def.hidesBack,
       items: { 0: { id: 0, label: "None", img: null } },
     };
   }
@@ -93,7 +89,6 @@
 
   const cats = cfg.categories.map(c => ({
     key: c.key, label: c.label || c.key, z: Number(c.z) || 100,
-    hidesBack: !!c.hidesBack,
   }));
 
   function buildCatalog() {
@@ -281,18 +276,6 @@
   }
 
   // Lazy-load the "_w" wind variant of a garment image (cached on the image).
-  // A garment that needs something BEHIND the pet — a cape, a backpack, the back
-  // panel of a dress a tail comes out of — gets a second file next to it:
-  // dress1.png -> dress1_back.png. Picked up automatically; if the file isn't
-  // there the garment simply has no back piece and behaves as it always did.
-  function backVariant(image) {
-    if (!image || !image.src) return null;
-    if (!image._backImg) {
-      image._backImg = img(image.src.replace(/\.png(\?.*)?$/i, "_back.png$1"));
-    }
-    return image._backImg;
-  }
-
   function windVariant(image) {
     if (!image || !image.src) return null;
     if (!image._windImg) {
@@ -470,39 +453,12 @@
     updateButtonLabel();
   };
 
-  // True while the pet wears something that covers its back parts entirely — a
-  // coat over the wings, a bodysuit over a tail. Set hidesBack:true on the item
-  // (or on its whole category) in outfit_config.js.
-  window.outfitHidesBack = function (petIndex) {
+  window.drawOutfitOverlay = function (ctx, state, x, y, w, h, petIndex) {
     if (window._modeName === "shower") return false;
-    const p = typeof petIndex === "number" ? petIndex : activePet();
-    const catalog = window.dressUpCatalog[p] || window.dressUpCatalog[0] || {};
-    return catKeys(p).some(k => {
-      const id = (window.selectedClothes[p] && window.selectedClothes[p][k]) ?? 0;
-      if (id === 0 || id === "0") return false;
-      const cat = catalog[k];
-      const it = cat && cat.items && cat.items[id];
-      if (!it || !it.img || it.img._failed) return false;
-      return !!(it.hidesBack || cat.hidesBack);
-    });
-  };
-
-  // opts (all optional, used by pet_back_layer.js):
-  //   layer: "back"  draw each garment's _back piece instead of its normal art
-  //   zMin / zMax    only categories whose z falls in [zMin, zMax) — this is how
-  //                  the back layer splits garments around the wings
-  // Called with no opts (as every mode does) it behaves exactly as before.
-  window.drawOutfitOverlay = function (ctx, state, x, y, w, h, petIndex, opts) {
-    if (window._modeName === "shower") return false;
-    const o = opts || {};
-    const back = o.layer === "back";
     const p = typeof petIndex === "number" ? petIndex : activePet();
     const catalog = window.dressUpCatalog[p] || window.dressUpCatalog[0] || {};
     let drew = false;
     catKeys(p).slice().sort((a, b) => (catalog[a].z || 0) - (catalog[b].z || 0)).forEach(k => {
-      const z = (catalog[k] && catalog[k].z) || 0;
-      if (o.zMin !== undefined && z < o.zMin) return;
-      if (o.zMax !== undefined && z >= o.zMax) return;
       const id = (window.selectedClothes[p] && window.selectedClothes[p][k]) ?? 0;
       if (id === 0 || id === "0") return;
       const it = catalog[k] && catalog[k].items && catalog[k].items[id];
@@ -513,13 +469,6 @@
         const wImg = windVariant(it.img);
         if (wImg && !wImg._failed && wImg.complete && wImg.naturalWidth) baseImg = wImg;
       }
-      // On the back layer a garment only shows if it actually has a _back piece.
-      if (back) {
-        baseImg = backVariant(baseImg);
-        if (!baseImg || baseImg._failed) return;
-      }
-      // Tint the piece we are about to draw — the _back art has its own src, so
-      // tintedImage() caches it separately and a red cape keeps a red back.
       const drawImg = hex ? tintedImage(baseImg, hex) : baseImg;
       if (safeDraw(ctx, drawImg, x, y, w, h)) drew = true;
     });

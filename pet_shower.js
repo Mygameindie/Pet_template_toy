@@ -211,18 +211,8 @@
       }
 
       if (imgToDraw && imgToDraw.complete && imgToDraw.naturalWidth > 0) {
-        // Body parts behind the pet (wings, tail, long hair). The shower has its
-        // own base art per state, so the part art is asked for by the same key —
-        // tail_bath1.png and friends — falling back to plain tail.png.
-        const key = (imgToDraw === baseSets[i].bath2) ? "bath2" : "bath1";
-        if (typeof window.drawPetBackLayer === "function") {
-          window.drawPetBackLayer(ctx, key, baths[i].x, baths[i].y, baths[i].w, baths[i].h, i);
-        }
         ctx.drawImage(imgToDraw, baths[i].x, baths[i].y, baths[i].w, baths[i].h);
-        if (typeof window.drawPetFrontLayer === "function") {
-          window.drawPetFrontLayer(ctx, key, baths[i].x, baths[i].y, baths[i].w, baths[i].h, i);
-        }
-        baths[i].lastDrawnBaseKey = key;
+        baths[i].lastDrawnBaseKey = (imgToDraw === baseSets[i].bath2) ? "bath2" : "bath1";
       }
     }
 
