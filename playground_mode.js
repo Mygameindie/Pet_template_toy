@@ -339,6 +339,7 @@
 
       ctx.save();
       if (needsTint) ctx.filter = 'hue-rotate(140deg) saturate(1.2)';
+      if (typeof window.drawOutfitBehind === 'function') window.drawOutfitBehind(ctx, state, pet.x - PET_W / 2, pet.y - PET_H / 2, PET_W, PET_H, i);
       safeDraw(img, pet.x - PET_W / 2, pet.y - PET_H / 2, PET_W, PET_H);
       if (typeof window.drawOutfitOverlay === 'function') {
         window.drawOutfitOverlay(ctx, state, pet.x - PET_W / 2, pet.y - PET_H / 2, PET_W, PET_H, i);
