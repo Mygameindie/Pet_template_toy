@@ -58,16 +58,6 @@
     return im;
   }
 
-  // Optional "blown" art: <name>_w.png (and <name>_back_w.png) is drawn instead of
-  // the normal picture while the blower is on. Quiet loader: a missing file is fine.
-  function windImg(src) {
-    const im = new Image();
-    im._failed = false;
-    im.onerror = () => { im._failed = true; };
-    im.src = src;
-    return im;
-  }
-  const isSkirtItem = (key, id) => key === "dress" || /skirt/i.test(String(id));
 
   // "top2" -> "Top 2", "top1_2" -> "Top 1", "boxers1_2" -> "Boxers 1"
   function humanize(id) {
@@ -138,9 +128,7 @@
       if (!Array.isArray(list)) return;
       list.forEach(entry => {
         const it = normItem(entry);
-        if (it) catalog[0][c.key].items[it.id] = { id: it.id, label: it.label, img: img(`${it.prefix}.png`), back: it.back ? img(`${it.back}.png`) : null,
-            wind: isSkirtItem(c.key, it.id) ? windImg(`${it.prefix}_w.png`) : null,
-            windBack: it.back && isSkirtItem(c.key, it.id) ? windImg(`${it.back}_w.png`) : null };
+        if (it) catalog[0][c.key].items[it.id] = { id: it.id, label: it.label, img: img(`${it.prefix}.png`), back: it.back ? img(`${it.back}.png`) : null };
       });
     });
     return catalog;
@@ -1143,14 +1131,8 @@
   // skirt-like garment (only its skirt part moves). isBack = this is a
   // behind-the-body piece (it uses backRegion / backKeep / backWind from the
   // windStyle config instead of region / keep).
-  function drawCloth(ctx, p, k, id, image, x, y, w, h, isBack, blownImage) {
+  function drawCloth(ctx, p, k, id, image, x, y, w, h, isBack) {
     if (!image || image._failed) return false;
-    // While the blower is on, use the _w (blown) picture when it exists.
-    if (blownImage && !blownImage._failed && blownImage.complete && blownImage.naturalWidth &&
-        window.ClothWind && window.ClothWind.get(p) > 0) {
-      const hexW = COLORS[(window.clothingColors[p] && window.clothingColors[p][k]) || DEFAULT_COLOR] || null;
-      return safeDraw(ctx, hexW ? tintedImage(blownImage, hexW) : blownImage, x, y, w, h);
-    }
     const hex = COLORS[(window.clothingColors[p] && window.clothingColors[p][k]) || DEFAULT_COLOR] || null;
     const drawImg = hex ? tintedImage(image, hex) : image;
     // A back piece stays still unless the config says where its skirt is
@@ -1186,9 +1168,9 @@
       const catBehind = !!catalog[k].behind;
       if (behind) {
         const piece = catBehind ? it.img : it.back;
-        if (piece && drawCloth(ctx, p, k, id, piece, x, y, w, h, true, catBehind ? it.wind : it.windBack)) drew = true;
+        if (piece && drawCloth(ctx, p, k, id, piece, x, y, w, h, true)) drew = true;
       } else if (!catBehind) {
-        if (drawCloth(ctx, p, k, id, it.img, x, y, w, h, false, it.wind)) drew = true;
+        if (drawCloth(ctx, p, k, id, it.img, x, y, w, h, false)) drew = true;
       }
     });
     return drew;
