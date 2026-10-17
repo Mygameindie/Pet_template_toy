@@ -15,9 +15,10 @@
 //  Change ONE word below:      gender: "girl"      or      gender: "boy"
 //  Refresh. Done.
 //
-//  You can also let the player flip it in-game: the Dress Up panel shows a
-//  "👧 Girl / 👦 Boy" switch. Turn that off with showSwitchButton: false if
-//  the pet's gender should be fixed.
+//  The gender is FIXED: the line below is the only thing that decides it.
+//  There is no in-game switch and nothing is remembered on the device, so a
+//  girl pet is always a girl and a boy pet is always a boy. (To let players
+//  flip it again, set showSwitchButton and remember back to true.)
 //
 //  ── ART NAMING ───────────────────────────────────────────────────────────
 //  Girl art keeps the plain names you already have:
@@ -39,14 +40,14 @@ window.PET_GENDER_CONFIG = window.PET_GENDER_CONFIG || {
   // 👇 THE SETTING: "girl" or "boy"
   gender: "girl",
 
-  // Show the Girl/Boy switch inside the Dress Up panel?
-  showSwitchButton: true,
+  // Show the Girl/Boy switch inside the Dress Up panel? (off: the gender is fixed)
+  showSwitchButton: false,
 
   // Remember the player's choice on this device (localStorage)?
   // Set false if the gender above should always win on refresh.
   // (While true, a gender the player picked in-game beats the setting above
   //  on this device — run  PetGender.forget()  in the console to clear it.)
-  remember: true,
+  remember: false,
 
   // File-name suffix for each gender's body art.
   art: {
