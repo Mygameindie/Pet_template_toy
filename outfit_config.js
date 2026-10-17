@@ -56,6 +56,19 @@ const DRESS1_SKIRT = {
   hide: { left: 0.37, right: 0.63, top: 0.83, bottom: 0.91 },
 };
 
+//  RAGDOLL (ported from Computer-pet): each pixel of a garment moves with the
+//  body part under it (see clothing_template/README.md). Three flags change
+//  how a garment is cut up:
+//    hangs: true   hangs from the hips in one piece (skirts, dresses) while
+//                  the legs swing underneath, instead of splitting between them.
+//    blows: true   like hangs, and blows up while the pet falls. A number is
+//                  the canvas height its skirt starts at (a dress: blows: 820).
+//    stiff: true   one solid piece over the chest (a crop top): stays whole on
+//                  the body, its sleeves still follow the arms.
+//  Optional extra pictures per garment: <name>_over.png (over the chest, e.g.
+//  bra straps), <name>_under.png (under it), <name>_arm_L/_arm_R.png (sleeves).
+// ===========================================================
+
 window.OUTFIT_CONFIG = {
 
   // -------------------------------------------------------------------------
@@ -115,8 +128,9 @@ window.OUTFIT_CONFIG = {
     { key: "onepieceUnderwear", label: "One-Piece Underwear",       z: 65  },
     { key: "top",               label: "Top",                       z: 120 },
     { key: "bottom",            label: "Pants / Skirt",             z: 110 },
-    { key: "dress",             label: "Dress",                     z: 130 },
+    { key: "dress",             label: "Dress",                     z: 130, blows: 820 },
     { key: "bodysuit",          label: "Bodysuit",                  z: 128 },
+    { key: "socks",             label: "Socks",                     z: 85  },
     { key: "shoes",             label: "Shoes",                     z: 90  },
     { key: "glove",             label: "Glove",                     z: 140 },
     { key: "bunnysuitbow",      label: "Bunnysuit Bow",             z: 150 },
@@ -131,12 +145,13 @@ window.OUTFIT_CONFIG = {
   // -------------------------------------------------------------------------
   girl: {
     topUnderwear:      ["topunderwear1", "topunderwear2", "topunderwear3", "topunderwear4"],
-    bottomUnderwear:   ["bottomunderwear1", "bottomunderwear2", "bottomunderwear3", "bottomunderwear4"],
+    bottomUnderwear:   [{ id: "bottomunderwear1", hangs: true }, "bottomunderwear2", "bottomunderwear3", "bottomunderwear4"],
     onepieceUnderwear: ["onepieceunderwear1"],
-    top:               ["top1"],
-    bottom:            ["pants1", "skirt1"],
+    top:               [{ id: "top1", stiff: true }],
+    bottom:            ["pants1", { id: "skirt1", blows: true }],
     dress:             [{ id: "dress1", back: true }],
     bodysuit:          ["bodysuit1"],
+    socks:             ["socks1"],
     shoes:             ["shoes1"],
     glove:             ["glove1"],
     bunnysuitbow:      ["bunnysuitbow1"],
@@ -157,6 +172,7 @@ window.OUTFIT_CONFIG = {
     top:               ["top1_2"],
     bottom:            ["pants1_2"],
     bodysuit:          ["bodysuit1_2"],
+    socks:             ["socks1_2"],
     shoes:             ["shoes1_2"],
     glove:             ["glove1_2"],
     bunnysuitbow:      ["bunnysuitbow1_2"],
@@ -168,11 +184,12 @@ window.OUTFIT_CONFIG = {
   // What the pet is already wearing when the game starts, per gender.
   defaults: {
     girl: {
-      onepieceUnderwear: "onepieceunderwear1",
-      glove: "glove1",
+      top: "top1",
+      topUnderwear: "topunderwear1",
+      bottomUnderwear: "bottomunderwear1",
+      bottom: "skirt1",
+      socks: "socks1",
       shoes: "shoes1",
-      ears: "ears1",
-      bunnysuitbow: "bunnysuitbow1",
     },
     boy: {
       bottomUnderwear: "boxers1_2",
