@@ -145,12 +145,18 @@
   // ===========================================================
   let spawnMap = {};
 
+  // False once this mode is unloaded (see cleanup), so nothing it started
+  // keeps running or building UI on top of the next mode.
+  let alive = true;
+  let raf = 0;
+
   async function loadFeedConfig() {
     // NOTE: If you open index.html via file://, some browsers block fetch().
     // Use a local server (VSCode Live Server) so this works.
     const res = await fetch("feed_items.json", { cache: "no-store" });
     if (!res.ok) throw new Error("feed_items.json not found");
     const cfg = await res.json();
+    if (!alive) return;   // left Feed mode before the list arrived: build nothing
     applyFeedConfig(cfg);
   }
 
@@ -395,7 +401,7 @@
     drawPet();
     applyGravity();
     drawFoods();
-    requestAnimationFrame(loop);
+    if (alive) raf = requestAnimationFrame(loop);
   }
   loop();
 
@@ -508,6 +514,9 @@
   // 🧹 CLEANUP
   // ===========================================================
   window._modeCleanup = function () {
+    // Stop drawing: this loop used to run forever, under every later mode.
+    alive = false;
+    cancelAnimationFrame(raf);
     listeners.forEach(([ev, fn]) => canvas.removeEventListener(ev, fn));
     window.removeEventListener("resize", onResize);
     if (bubble) bubble.style.display = "none";
