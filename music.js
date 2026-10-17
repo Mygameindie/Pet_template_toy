@@ -57,8 +57,8 @@
     { a: new Image(), b: new Image(), current: null, toggle: false }, // pet1
   ];
 
-  // Pet 1 dance frames
-  petImgs[0].a.src = "base_music1.png";
+  // Pet 1 dance frames: base.png and base_music2.png (head_music.png on the normal body)
+  petImgs[0].a.src = "base.png";   // normal picture, also shown before/after the music
   petImgs[0].b.src = "base_music2.png";
 
   petImgs[0].current = petImgs[0].a;
