@@ -211,6 +211,7 @@
       }
 
       if (imgToDraw && imgToDraw.complete && imgToDraw.naturalWidth > 0) {
+        if (imgToDraw === baseSets[i].bath1) imgToDraw = (window.PetFace && window.PetFace.shyImg ? window.PetFace.shyImg(imgToDraw, i) : imgToDraw);
         ctx.drawImage(imgToDraw, baths[i].x, baths[i].y, baths[i].w, baths[i].h);
         baths[i].lastDrawnBaseKey = (imgToDraw === baseSets[i].bath2) ? "bath2" : "bath1";
       }

@@ -132,6 +132,7 @@
         if (!fb || (!plain && failed.split('?')[0].endsWith('/' + fb))) return;
         withHead(failed, fb, url => {
           if (img.src !== failed) return;
+          if (plain && url) img._plainBase = true;   // pet_stats.js PetFace.shyImg: a normal-pose body built from parts
           if (!url && plain) return;           // nothing to build it from
           if (!url) img._fallbackBase = true;
           img.addEventListener('load', () => { img._failed = false; }, { once: true });

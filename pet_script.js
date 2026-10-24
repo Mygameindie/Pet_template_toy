@@ -162,11 +162,13 @@
   function partSuffix(i) { return (window.PetGender && typeof window.PetGender.suffix === 'function') ? window.PetGender.suffix() : ''; }
 
   // Heads besides the normal one: 1 = touched by a toy (head_1.png), the rest
-  // are set by PetFace (pet_stats.js) from what you do to the pet.
-  const FACES = ['1', 'happy', 'disgust', 'sick', 'heal', 'music', 'shower'];
+  // are set by PetFace (pet_stats.js) from what you do to the pet (shy_1 = shy + toy).
+  const FACES = ['1', 'happy', 'disgust', 'sick', 'heal', 'music', 'shower', 'shy', 'shy_1'];
   // The face the pet wears right now, or null for its normal head.
   function faceOf(pet, i) {
-    const name = pet._toyActive ? '1' : (window.PetFace ? window.PetFace.get(i) : null);
+    let name = window.PetFace ? window.PetFace.get(i) : null;
+    // A shy pet touched by a toy wears head_shy_1.png (else head_1.png).
+    if (pet._toyActive) name = name === 'shy' ? 'shy_1' : '1';
     return name && pet.faceImgs && pet.faceImgs[name] ? name : null;
   }
 
@@ -211,7 +213,7 @@
     Object.keys(sel).forEach(k => {
       const it = cat[k] && cat[k].items && cat[k].items[sel[k]];
       if (!it) return;
-      ['img', 'back', 'over', 'under', 'armL', 'armR'].forEach(n => {
+      ['img', 'back', 'over', 'under', 'armL', 'armR', 'legL', 'legR'].forEach(n => {
         const im = it[n];
         ready += im ? (im._failed ? 'x' : im.complete && (!window.outfitTintReady || window.outfitTintReady(im, col[k])) ? '1' : '0') : '-';
       });
@@ -256,6 +258,13 @@
   // Cut the clothes up along the body parts and hand them to the skeleton.
   // Only redone when the outfit or the art changes.
   function buildBody(pet, i) {
+    // A garment with cuffs: true (outfit_config.js) has its sleeves stuck to the top,
+    // so the arms can't move away from them.
+    pet.body.armsLocked = Object.keys(window.selectedClothes[i] || {}).some(k => {
+      const cat = (window.dressUpCatalog[i] || window.dressUpCatalog[0] || {})[k];
+      const it = cat && cat.items && cat.items[window.selectedClothes[i][k]];
+      return !!(it && it.cuffs);
+    });
     const face = faceOf(pet, i);
     const sig = wornSig(i) + '|face' + (face || '');
     if (sig === pet.artSig) return;
@@ -264,14 +273,29 @@
     const W = Math.round(RCFG.SRC_W * cs), H = Math.round(RCFG.SRC_H * cs);
     const sized = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return c; };
     const cloth = sized(), hang = sized(), over = sized(), under = sized(), blow = sized(),
-      stiff = sized(), armL = sized(), armR = sized(), back = sized(), overTop = sized();
+      stiff = sized(), armL = sized(), armR = sized(), legL = sized(), legR = sized(), legTop = sized(), back = sized(), overTop = sized();
     let blowFrom = Infinity;
     const D = window.drawOutfitOverlay;
     if (typeof D === 'function') {
       // whole: true (outfit_config.js): carried by the body in one piece, drawn
       // over the chest (a bra: its cups and straps never go off with an arm).
       const covers = it => !it.stiff && !it.whole && coversChest(it);
-      D(cloth.getContext('2d'), 'stand', 0, 0, W, H, i, it => !it.stiff && !it.whole && !it.blows && !(covers(it) && !it.hangs));
+      // A garment with its own <name>_L / <name>_R leg pictures (shoes, socks) is
+      // not cut along the legs: those two pictures replace it on the legs.
+      const legPic = im => !!im && !im._failed && im.complete && im.naturalWidth > 0;
+      const ownLegs = it => legPic(it.legL) || legPic(it.legR);
+      D(cloth.getContext('2d'), 'stand', 0, 0, W, H, i, it => !ownLegs(it) && !it.stiff && !it.whole && !it.blows && !(covers(it) && !it.hangs));
+      // Clothes worn OVER the leg pictures (pants over shoes, by z in outfit_config.js)
+      // are also drawn again above them, on the legs only (see buildArt).
+      let legZ = -Infinity;
+      Object.keys(window.selectedClothes[i] || {}).forEach(k => {
+        const cat = (window.dressUpCatalog[i] || window.dressUpCatalog[0] || {})[k];
+        const it = cat && cat.items && cat.items[window.selectedClothes[i][k]];
+        if (it && ownLegs(it)) legZ = Math.max(legZ, it.z || 0);
+      });
+      if (isFinite(legZ)) {
+        D(legTop.getContext('2d'), 'stand', 0, 0, W, H, i, it => it.z > legZ && !ownLegs(it) && !it.stiff && !it.whole && !it.blows && !it.hangs && !covers(it));
+      }
       D(hang.getContext('2d'), 'stand', 0, 0, W, H, i, it => (it.hangs || it.blows) && !it.stiff && !it.whole);
       D(blow.getContext('2d'), 'stand', 0, 0, W, H, i, it => {
         if (!it.blows || it.stiff || it.whole) return false;
@@ -288,6 +312,10 @@
       D(over.getContext('2d'), 'stand', 0, 0, W, H, i, it => !ownsTop(it), 'over');
       D(overTop.getContext('2d'), 'stand', 0, 0, W, H, i, ownsTop, 'over');
       const sx = stiff.getContext('2d');
+      // cuffs: true (outfit_config.js): the sleeves are part of the top, not the arms:
+      // carried by the body and drawn just under the top, so they stay stuck to it.
+      D(sx, 'stand', 0, 0, W, H, i, it => it.cuffs, 'armL');
+      D(sx, 'stand', 0, 0, W, H, i, it => it.cuffs, 'armR');
       D(sx, 'stand', 0, 0, W, H, i, it => !it.whole && (it.stiff || (covers(it) && !it.hangs && !it.blows)));
       // A dress (or other hanging garment) that covers the chest: its top half
       // goes over the chest like a top, its skirt still hangs / blows.
@@ -304,8 +332,10 @@
         sx.drawImage(tops, 0, 0);
       }
       D(under.getContext('2d'), 'stand', 0, 0, W, H, i, null, 'under');
-      D(armL.getContext('2d'), 'stand', 0, 0, W, H, i, null, 'armL');
-      D(armR.getContext('2d'), 'stand', 0, 0, W, H, i, null, 'armR');
+      D(armL.getContext('2d'), 'stand', 0, 0, W, H, i, it => !it.cuffs, 'armL');
+      D(armR.getContext('2d'), 'stand', 0, 0, W, H, i, it => !it.cuffs, 'armR');
+      D(legL.getContext('2d'), 'stand', 0, 0, W, H, i, null, 'legL');
+      D(legR.getContext('2d'), 'stand', 0, 0, W, H, i, null, 'legR');
     }
     if (typeof window.drawOutfitBehind === 'function') {
       window.drawOutfitBehind(back.getContext('2d'), 'stand', 0, 0, W, H, i, () => true);
@@ -314,7 +344,7 @@
     try {
       const partImgs = face ? Object.assign({}, pet.partImgs, { head: pet.faceImgs[face] }) : pet.partImgs;
       pet.body.buildArt(partImgs, cloth, cs, hang, over, under, blow,
-        isFinite(blowFrom) ? blowFrom : null, stiff, { arm_L: armL, arm_R: armR }, back, overTop);
+        isFinite(blowFrom) ? blowFrom : null, stiff, { arm_L: armL, arm_R: armR, armArt: !!pet.body.armsLocked, leg_L: legL, leg_R: legR, legTop }, back, overTop);
     } catch (err) {
       // Reading the pictures' pixels is refused when the game is opened as a
       // file:// page (serve it over http, e.g. GitHub Pages). Keep the sprite.
@@ -509,7 +539,10 @@
     if (activePet) {
       // Playing with pet boosts happiness
       const petIdx = pets.indexOf(activePet);
-      if (petIdx >= 0 && window.PetStats) window.PetStats.play(petIdx);
+      if (petIdx >= 0 && window.PetStats) {
+        window.PetStats.play(petIdx);
+        window.PetStats.shyUp(petIdx, 8);   // being picked up / petted
+      }
       activePet.dragging = false;
     }
     activePet = null;
@@ -535,7 +568,15 @@
   function onResize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    groundY = canvas.height - groundHeight;
+    syncGround();
+  }
+  // canvas_fix.js resizes the canvas on its own (after coming back from the
+  // share sheet / another app, the window size settles late and no 'resize'
+  // reaches this mode), so the ground is re-read from the canvas every frame.
+  function syncGround() {
+    const gy = canvas.height - groundHeight;
+    if (gy === groundY) return;
+    groundY = gy;
 
     // keep pet in bounds
     pets[0].x = Math.min(pets[0].x, canvas.width - pets[0].w / 2);
@@ -552,6 +593,7 @@
   // === Update ===
   let lastT = performance.now();
   function update() {
+    syncGround();
     const now = performance.now();
     // dt in "60fps frames", capped so a background-tab hiccup can't launch pets.
     const dt = clamp((now - lastT) / 16.667, 0.25, 2.5);
@@ -759,6 +801,8 @@
         }
         if (toyImg && !toyImg._failed) img = toyImg;
       }
+
+      if (window.PetFace && window.PetFace.shyImg && !pet._toyActive) img = window.PetFace.shyImg(img, i);
 
       if (isRag(pet, i) && pet.body && pet.body.parts) {
         ctx.save();

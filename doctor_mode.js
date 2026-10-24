@@ -157,6 +157,7 @@
     }
 
     if (!img) return;
+    if (pet.phase !== "healed" && pet.phase !== "sick") img = (window.PetFace && window.PetFace.shyImg ? window.PetFace.shyImg(img, i) : img);
 
     ctx.save();
     if (typeof window.drawOutfitBehind === 'function') window.drawOutfitBehind(ctx, 'stand', petX(i) - PET_W / 2, petY() - PET_H / 2, PET_W, PET_H, i);

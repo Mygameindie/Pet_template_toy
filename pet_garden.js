@@ -577,7 +577,7 @@
         ctx.filter = useFilter;
 
         if (typeof window.drawOutfitBehind === 'function') window.drawOutfitBehind(ctx, 'stand', x, petY, petW, petH, idx);
-        ctx.drawImage(img, x, petY, petW, petH);
+        ctx.drawImage((window.PetFace && window.PetFace.shyImg ? window.PetFace.shyImg(img, idx) : img), x, petY, petW, petH);
 
         if (typeof window.drawOutfitOverlay === 'function') {
           window.drawOutfitOverlay(ctx, 'stand', x, petY, petW, petH, idx);

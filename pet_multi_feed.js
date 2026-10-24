@@ -99,6 +99,7 @@
     }
     if (!img || img._failed || !img.complete || img.naturalWidth === 0) return;
 
+    img = (window.PetFace && window.PetFace.shyImg ? window.PetFace.shyImg(img, i) : img);
     ctx.save();
     ctx.filter = useTintFallback ? (pets[i] && pets[i].drawFilter ? pets[i].drawFilter : "none") : "none";
     ctx.drawImage(img, x, y, w, h);

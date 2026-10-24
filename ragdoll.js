@@ -490,7 +490,8 @@
       // swinging the body, which needs the bone solve that follows it).
       if (last && tipHeld) return;
       let lo = L.lo, hi = L.hi;
-      if (tipHeld) {
+      if (this.armsLocked && ARM_LIMITS.includes(L)) { lo = hi = 0; }   // cuffs worn: arms stay put
+      else if (tipHeld) {
         // Only the side named in heldLo/heldHi is widened (the arm may go further
         // UP when the pet hangs from that hand, never further down into the body).
         if (L.held === undefined && L.heldLo === undefined && L.heldHi === undefined) return;
@@ -657,7 +658,7 @@
       // when the worn garments have them, nothing is cut along the arms and the
       // stiff garments stay whole. Without them the old cuts are used.
       const armPic = id => armCloth && armCloth[id] && armCloth[id].getContext('2d').getImageData(0, 0, CW, CH).data.some((v, i) => i % 4 === 3 && v > 6);
-      const armArt = !!(armPic('arm_L') || armPic('arm_R'));
+      const armArt = !!(armPic('arm_L') || armPic('arm_R') || (armCloth && armCloth.armArt));
       const hasRegion = p => p.region && !(armArt && (p.id === 'arm_L' || p.id === 'arm_R'));
 
       const bboxOf = (ctx) => {
@@ -964,7 +965,7 @@
         // A stiff garment's share: all of it but what the arms, legs and head took
         // (all of it when the sleeves are their own pictures).
         const t = mkRead(CW, CH);
-        if (!armArt && over) t.x.drawImage(over, 0, 0);
+        if (over) t.x.drawImage(over, 0, 0);   // under the top: a top covers a bra
         const st = mkRead(CW, CH);
         st.x.drawImage(stiff, 0, 0);
         if (!armArt) {
@@ -972,7 +973,6 @@
           for (const o of regionParts) if (!o.offset) shape(st.x, o.region);
         }
         t.x.drawImage(st.c, 0, 0);
-        if (armArt && over) t.x.drawImage(over, 0, 0);
         overAll = t.c;
       }
       if (overTop) {
@@ -1000,7 +1000,7 @@
       }
       // Sleeves: each arm's clothing is its own picture, drawn above the body and
       // turned with that arm (nothing is cut out of the garments).
-      for (const id of ['arm_L', 'arm_R']) {
+      for (const id of ['arm_L', 'arm_R', 'leg_L', 'leg_R']) {
         const src = armCloth && armCloth[id];
         const def = CFG.parts.find(p => p.id === id);
         if (!src || !def) continue;
@@ -1016,6 +1016,31 @@
           ox: pv.x * cs - b.x0, oy: pv.y * cs - b.y0,
           restAngle: Math.atan2(ch.y - pv.y, ch.x - pv.x),
         };
+        if (def.drop) {
+          // Leg pictures (<garment>_L / _R: shoes, socks) turn with their leg,
+          // right above it.
+          const legAt = out.findIndex(o => o.id === id);
+          if (legAt >= 0) out.splice(legAt + 1, 0, sleeve); else out.push(sleeve);
+          // What is worn over the leg pictures (pants over shoes): this leg's share
+          // of it, drawn again right above them.
+          if (armCloth.legTop && def.region) {
+            const t = mkRead(CW, CH);
+            t.x.drawImage(armCloth.legTop, 0, 0);
+            t.x.globalCompositeOperation = 'destination-in';
+            shape(t.x, def.region);
+            const tb = bboxOf(t.x);
+            if (tb) {
+              const tc = mk(tb.x1 - tb.x0, tb.y1 - tb.y0);
+              tc.getContext('2d').drawImage(t.c, -tb.x0, -tb.y0);
+              out.splice(out.indexOf(sleeve) + 1, 0, {
+                id: id + '_cloth_top', pivot: def.pivot, child: def.child, canvas: tc,
+                ox: pv.x * cs - tb.x0, oy: pv.y * cs - tb.y0,
+                restAngle: sleeve.restAngle,
+              });
+            }
+          }
+          continue;
+        }
         // A sleeve goes just behind the top (the body's over-the-chest layer), so
         // the top's own picture lies over the sleeve root; without one, last.
         const topAt = out.findIndex(o => o.id === 'body_over');

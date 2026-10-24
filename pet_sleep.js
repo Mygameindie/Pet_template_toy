@@ -434,6 +434,7 @@
       baseCtx.save();
       baseCtx.filter = useTint ? (pet.drawFilter || "none") : "none";
       if (typeof window.drawOutfitBehind === 'function') window.drawOutfitBehind(baseCtx, state, pet.x - pet.w / 2, pet.y - pet.h / 2, pet.w, pet.h, i);
+      img = (window.PetFace && window.PetFace.shyImg ? window.PetFace.shyImg(img, i) : img);
       safeDraw(baseCtx, img, pet.x - pet.w / 2, pet.y - pet.h / 2, pet.w, pet.h);
 
       if (window.drawOutfitOverlay) {
