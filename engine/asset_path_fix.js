@@ -18,6 +18,13 @@
     configurable: false,
   });
 
+  // posesFromHeads (game_config.js): the game has no whole-body pictures
+  // (base.png, base_sick.png, base_happy.png, base_music2.png, base_bath2.png,
+  // base_1.png ...). Every pose is the standing body built from images/parts/
+  // plus that pose's head (head_sick.png, head_happy.png, head_music.png,
+  // head_shower.png, head_1.png ...), so those files are not even requested.
+  const FROM_HEADS = !!(window.GAME_CONFIG && window.GAME_CONFIG.posesFromHeads);
+
   function shouldPrefix(value) {
     if (typeof value !== 'string') return false;
     const src = value.trim();
@@ -39,13 +46,12 @@
   // vanished. So a missing base_<anything>.png loads the pet's own base.png
   // (base_2.png for character 2 / the boy) into the same image instead, and
   // counts as loaded. Real pose art, when it exists, is used as before.
-  // The image gets _fallbackBase = true, for code that needs to know.
+  // The image gets _fallbackHead = true, for code that needs to know.
   const POSE = /(?:^|\/)base_([^/]+)\.png(?:\?.*)?$/i;
   function fallbackName(url) {
     const m = POSE.exec(url);
     if (!m) return null;
-    let two = /(?:^|_)2(?:_|$)/.test(m[1]);
-    if (!two && window.PetGender && typeof window.PetGender.get === 'function') two = window.PetGender.get() === 'boy';
+    const two = /(?:^|_)2(?:_|$)/.test(m[1]);
     return two ? 'base_2.png' : 'base.png';
   }
   // ---- A pose = the pet's normal body + that pose's own head ---------------
@@ -70,7 +76,7 @@
   function partsBody(two, cb) {
     const cfg = window.RAGDOLL_CONFIG;
     const names = ((cfg && cfg.parts) || []).map(q => q.file).filter(n => n !== 'head');
-    const list = names.length ? names : ['back_hair', 'back_wings', 'back_tail', 'leg_L', 'leg_R', 'arm_L', 'arm_R', 'body', 'chest_L', 'chest_R'];
+    const list = names.length ? names : ['back_hair', 'wing_L', 'wing_R', 'back_tail', 'leg_L', 'leg_R', 'arm_L', 'arm_R', 'body', 'chest_L', 'chest_R'];
     const imgs = {};
     let left = list.length;
     const done = () => { if (--left === 0) cb(list.map(n => imgs[n]).filter(Boolean), !!imgs.body); };
@@ -90,7 +96,7 @@
     const key = fb + '+' + headUrl;
     if (composed.has(key)) return cb(composed.get(key));
     const body = new Image(), head = new Image();
-    let left = 2, bodyOk = true, headOk = true;
+    let left = FROM_HEADS ? 1 : 2, bodyOk = !FROM_HEADS, headOk = true;
     const finish = url => { composed.set(key, url); cb(url); };
     const paint = (layers, cutHead) => {
       try {
@@ -114,13 +120,13 @@
     body.onload = done; head.onload = done;
     body.onerror = () => { bodyOk = false; done(); };
     head.onerror = () => { headOk = false; done(); };
-    desc.set.call(body, IMAGE_DIR + fb);
+    if (!FROM_HEADS) desc.set.call(body, IMAGE_DIR + fb);
     desc.set.call(head, headUrl);
   }
 
-  function armBaseFallback(img, url) {
-    if (img.__baseFallbackArmed || typeof url !== 'string' || !(POSE.test(url) || BASE.test(url))) return;
-    img.__baseFallbackArmed = true;
+  function armHeadFallback(img, url) {
+    if (img.__headFallbackArmed || typeof url !== 'string' || !(POSE.test(url) || BASE.test(url))) return;
+    img.__headFallbackArmed = true;
     img.addEventListener('error', () => {
       const failed = img.src;
       // Let any other fallback (e.g. the boy/girl art switch) go first: only
@@ -132,13 +138,32 @@
         if (!fb || (!plain && failed.split('?')[0].endsWith('/' + fb))) return;
         withHead(failed, fb, url => {
           if (img.src !== failed) return;
-          if (plain && url) img._plainBase = true;   // pet_stats.js PetFace.shyImg: a normal-pose body built from parts
+          if (plain && url) { img._plainHead = true; img._two = fb === 'base_2.png'; }   // pet_stats.js PetFace.shyImg: a normal-pose body built from parts
           if (!url && plain) return;           // nothing to build it from
-          if (!url) img._fallbackBase = true;
+          if (!url) img._fallbackHead = true;
           img.addEventListener('load', () => { img._failed = false; }, { once: true });
           desc.set.call(img, url || IMAGE_DIR + fb);
         });
       }, 0);
+    });
+  }
+
+  // posesFromHeads: build the picture from parts + head instead of loading it.
+  function poseFromHead(img, url) {
+    img._poseUrl = url;
+    const plain = BASE.exec(url);
+    const fb = plain ? (plain[1] ? 'base_2.png' : 'base.png') : fallbackName(url);
+    withHead(url, fb, blob => {
+      if (img._poseUrl !== url) return;
+      if (blob) {
+        if (plain) { img._plainHead = true; img._two = fb === 'base_2.png'; }   // pet_stats.js PetFace.shyImg
+        img.addEventListener('load', () => { img._failed = false; }, { once: true });
+        desc.set.call(img, blob);
+      } else {
+        // No parts / head for it (e.g. character 2 has no _2 art yet): report
+        // it as missing so the mode falls back to character 1's picture.
+        img.dispatchEvent(new Event('error'));
+      }
     });
   }
 
@@ -148,7 +173,11 @@
     get: desc.get,
     set(value) {
       const fixed = shouldPrefix(value) ? IMAGE_DIR + value : value;
-      armBaseFallback(this, fixed);
+      if (FROM_HEADS && typeof fixed === 'string' && (POSE.test(fixed) || BASE.test(fixed))) {
+        poseFromHead(this, fixed);
+        return;
+      }
+      armHeadFallback(this, fixed);
       return desc.set.call(this, fixed);
     },
   });

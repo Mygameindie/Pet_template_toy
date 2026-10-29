@@ -1,9 +1,9 @@
 // ===========================================================
 // 🧼 SHOWER MODE (No Toolbar Version)
-// ✅ 1 PET (pet1)
-// ✅ pet1 base: base.png / base_bath2.png
-// ✅ LAYER ORDER:
-//    pool2 (bottom) -> base (middle) -> sponge -> pool1 (top)
+// ✅ Pets come from game_config.js
+// ✅ per-pet base: base.png / base_bath2.png (+ artSuffix, e.g. base_2.png / base_2_bath2.png)
+// ✅ LAYER ORDER (ONE BIG POOL covering ALL PETS):
+//    pool2 (bottom, one big) -> heads (middle) -> sponge -> pool1 (top, one big)
 // ===========================================================
 
 (() => {
@@ -47,20 +47,27 @@
   let groundY = canvas.height - groundHeight;
 
   // ==============================
-  // Bath Bases (Per Pet)
+  // Bath Heads (Per Pet)
   // ==============================
 
-  const baseSets = [
-    { bath1: new Image(), bath2: new Image() }, // pet1
-  ];
+  // Characters come from game_config.js (count, art suffix, position).
+  // Bath art per pet: base.png / base_bath2.png plus the pet's artSuffix
+  // (e.g. base_2.png / base_2_bath2.png).
+  const PET_CFG = (window.GAME_CONFIG && Array.isArray(window.GAME_CONFIG.pets) && window.GAME_CONFIG.pets.length)
+    ? window.GAME_CONFIG.pets
+    : [{ artSuffix: "", xFrac: 0.5 }];
 
-  // pet1
-  baseSets[0].bath1.src = "base.png";
-  baseSets[0].bath2.src = "base_bath2.png";
+  const headSets = PET_CFG.map(c => {
+    const sfx = c.artSuffix || "";
+    const set = { bath1: new Image(), bath2: new Image() };
+    set.bath1.src = `base${sfx}.png`;
+    set.bath2.src = `base${sfx}_bath2.png`;
+    return set;
+  });
 
-  const baths = [
-    { currentBaseKey: "bath1", lastDrawnBaseKey: "bath1", wasTouching: false, x: 0, y: 0, w: 0, h: 0 },
-  ];
+  const baths = PET_CFG.map(() => (
+    { currentHeadKey: "bath1", lastDrawnHeadKey: "bath1", wasTouching: false, x: 0, y: 0, w: 0, h: 0 }
+  ));
 
   // ==============================
   // Pool overlays (ONE BIG pool covering BOTH)
@@ -183,10 +190,12 @@
     const scaledH = 450;
     const scaledW = window.PetArt ? window.PetArt.widthForHeight(scaledH) : 400;
 
-    const centerX = canvas.width * 0.5 - scaledW / 2;
     const groundedY = groundY - scaledH;
 
-    const positions = [centerX];
+    const positions = PET_CFG.map((c, i) => {
+      const xFrac = (c.xFrac != null) ? c.xFrac : (i + 1) / (PET_CFG.length + 1);
+      return canvas.width * xFrac - scaledW / 2;
+    });
 
     // Update bath rects
     for (let i = 0; i < baths.length; i++) {
@@ -196,24 +205,24 @@
       baths[i].h = scaledH;
     }
 
-    // Pool rect covering the pet
-    const poolX = centerX;
+    // ONE big pool rect covering every bath
+    const poolX = Math.min(...positions);
     const poolY = groundedY;
-    const poolW = scaledW;
+    const poolW = (Math.max(...positions) - poolX) + scaledW; // covers left-most to right-most bath
     const poolH = scaledH;
 
     // helper: draw base with fallback
-    function drawBase(i, key) {
-      let imgToDraw = baseSets[i][key];
+    function drawHead(i, key) {
+      let imgToDraw = headSets[i][key];
 
       if (!(imgToDraw && imgToDraw.complete && imgToDraw.naturalWidth > 0)) {
-        imgToDraw = baseSets[i][baths[i].lastDrawnBaseKey];
+        imgToDraw = headSets[i][baths[i].lastDrawnHeadKey];
       }
 
       if (imgToDraw && imgToDraw.complete && imgToDraw.naturalWidth > 0) {
-        if (imgToDraw === baseSets[i].bath1) imgToDraw = (window.PetFace && window.PetFace.shyImg ? window.PetFace.shyImg(imgToDraw, i) : imgToDraw);
+        if (imgToDraw === headSets[i].bath1) imgToDraw = (window.PetFace && window.PetFace.shyImg ? window.PetFace.shyImg(imgToDraw, i) : imgToDraw);
         ctx.drawImage(imgToDraw, baths[i].x, baths[i].y, baths[i].w, baths[i].h);
-        baths[i].lastDrawnBaseKey = (imgToDraw === baseSets[i].bath2) ? "bath2" : "bath1";
+        baths[i].lastDrawnHeadKey = (imgToDraw === headSets[i].bath2) ? "bath2" : "bath1";
       }
     }
 
@@ -222,9 +231,9 @@
       ctx.drawImage(poolImgs.bottom, poolX, poolY, poolW, poolH);
     }
 
-    // 2) bases middle (both pets)
+    // 2) heads middle (both pets)
     for (let i = 0; i < baths.length; i++) {
-      drawBase(i, baths[i].currentBaseKey);
+      drawHead(i, baths[i].currentHeadKey);
     }
 
     // 3) sponge (guard against a broken/missing image — drawImage throws on those)
@@ -248,20 +257,20 @@
         sponge.y < hbY + hbH;
 
       if (touching) {
-        baths[i].currentBaseKey = "bath2";
+        baths[i].currentHeadKey = "bath2";
         if (!baths[i].wasTouching) {
           playSplash();
           if (window.PetStats) window.PetStats.shower(i);
         }
         if (typeof window.setActivePet === "function") window.setActivePet(i);
       } else {
-        baths[i].currentBaseKey = "bath1";
+        baths[i].currentHeadKey = "bath1";
       }
 
       baths[i].wasTouching = touching;
     }
 
-    // 5) pool1 top (ONE big, covers both bases)
+    // 5) pool1 top (ONE big, covers both heads)
     if (poolImgs.top.complete && poolImgs.top.naturalWidth > 0) {
       ctx.drawImage(poolImgs.top, poolX, poolY, poolW, poolH);
     }

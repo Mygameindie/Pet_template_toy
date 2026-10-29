@@ -3,7 +3,7 @@
 // ===========================================================
 //
 //  This template has ONE pet, and that pet can be a GIRL or a BOY.
-//  The gender is set in pet_gender.js ( gender: "girl" / "boy" ), and the
+//  The gender is set in game_config.js ( gender: "girl" / "boy" ), and the
 //  pet only ever wears the wardrobe of the gender it currently is:
 //
 //      girl: { ... }   <- what she can wear
@@ -21,7 +21,7 @@
 //        { id: "top2", label: "Cool Hoodie" }
 //
 //  BOY ART uses the same name with "_2" added:  top1 -> top1_2. That is the
-//  same suffix pet_gender.js uses for his body art (base.png -> base_2.png),
+//  same suffix game_config.js uses for his body art (base.png -> base_2.png),
 //  so a whole boy character is just "the _2 pictures".
 //
 //  BOY CLOTHING RULES come from this file: he simply has no dress, skirt,
@@ -159,7 +159,7 @@ window.OUTFIT_CONFIG = {
   ],
 
   // -------------------------------------------------------------------------
-  // GIRL — worn when pet_gender.js says gender: "girl". Plain art names
+  // GIRL — worn when game_config.js says gender: "girl". Plain art names
   // (top1.png, dress1.png ...), same as before.
   // -------------------------------------------------------------------------
   girl: {
@@ -181,7 +181,7 @@ window.OUTFIT_CONFIG = {
   },
 
   // -------------------------------------------------------------------------
-  // BOY — worn when pet_gender.js says gender: "boy". Boy clothing rules:
+  // BOY — worn when game_config.js says gender: "boy". Boy clothing rules:
   // no top underwear, no one-piece underwear, no dress, no skirt. He wears
   // boxers and pants instead, but CAN wear a bunnysuit bow and a bodysuit.
   // Art uses the "_2" suffix (e.g. "top1_2"); drop the matching PNGs in
@@ -210,3 +210,12 @@ window.OUTFIT_CONFIG = {
     },
   },
 };
+
+// The engine reads the one pet's wardrobe from pet1 — pick the list for the
+// gender set in game_config.js (no need to edit).
+(() => {
+  const cfg = window.OUTFIT_CONFIG;
+  const g = (window.GAME_CONFIG && window.GAME_CONFIG.gender) === "boy" ? "boy" : "girl";
+  cfg.pet1 = cfg[g] || {};
+  cfg.defaults = { pet1: (cfg.defaults && cfg.defaults[g]) || {} };
+})();
