@@ -1,14 +1,20 @@
 # Pet Game — Shared Engine + Per-Game Content
 
-This game and its sibling repo run on **the same engine** but are
-**different games**. The rule is simple:
+Several games run on **the same engine** but are **different games**.
+There are two engine families, each with one TEMPLATE repo that owns it:
+
+| Family | Template (edit the engine HERE) | Games that get its engine |
+|---|---|---|
+| 1 pet | `Pet_template_toy` | `Seafairycookiepet` |
+| 2+ pets | `Pet_template_toy2` | `Devilangelpet` |
 
 ```
-engine/           SHARED — identical in every game repo. Never edit it
-                  in only one repo: edit once, run ./sync_engine.sh,
-                  commit BOTH repos.
-sync_engine.sh    SHARED — the script that copies engine/ to the other repo.
+engine/           SHARED — identical in every game of the family. Edit it
+                  ONLY in the family's template repo; it is copied to the
+                  games automatically (see below).
+sync_engine.sh    SHARED — the script that copies engine/ to another repo.
 README.md         SHARED — this file.
+sync_targets.txt  TEMPLATE ONLY — the games this template's engine goes to.
 
 game_config.js    PER-GAME — how many characters, their positions,
                   art suffixes, and fallback tints.
@@ -27,10 +33,28 @@ index.html        PER-GAME — page title + script list.
 
 ## How to change something
 
-**Game behavior for BOTH games** (physics, a mode, a bug fix):
-1. Edit the file in `engine/` in either repo.
-2. Run `./sync_engine.sh <path-to-other-repo>` — e.g. `./sync_engine.sh ../Pet_template_toy2`
-3. Commit and push **both** repos.
+**Game behavior for every game in a family** (physics, a mode, a bug fix):
+1. Edit the file in `engine/` in the family's **template** repo.
+2. Commit and push the template to its default branch.
+3. That's it: the GitHub Action `.github/workflows/sync_engine.yml` copies
+   `engine/` (plus `sync_engine.sh` and this README) into every game listed in
+   `sync_targets.txt` and pushes it there. Watch it in the template's
+   **Actions** tab.
+
+Never edit `engine/` inside a game repo (Seafairycookiepet, Devilangelpet):
+the next sync from the template overwrites it.
+
+Adding a new game to a family: add its `owner/repo` line to the template's
+`sync_targets.txt` (and give the sync token access to it, see below).
+
+Manual sync (no GitHub needed): from the template's folder run
+`./sync_engine.sh ../<GameRepo>`, then commit and push the game repo.
+
+One-time setup for the automatic sync: create a GitHub fine-grained token
+(Settings → Developer settings → Fine-grained tokens) with
+**Contents: Read and write** on every game repo in `sync_targets.txt`, then
+add it to the template repo as an Actions secret named `ENGINE_SYNC_TOKEN`
+(template repo → Settings → Secrets and variables → Actions).
 
 **Content for ONE game** (characters, clothes, items, art):
 1. Edit that game's `game_config.js` / `outfit_config.js` / JSON files / `images/`.
